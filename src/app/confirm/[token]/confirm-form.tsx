@@ -135,18 +135,18 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 
       {/* PDF/画像表示 — 画面幅いっぱい、ピンチズーム可能 */}
       {signedFileUrl && (
-        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3">
+        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3" style={{ touchAction: 'pan-y' }}>
           <div className="px-4 py-2 border-b border-border">
             <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
           </div>
           {isImagePath(invoice.pdf_file_path) ? (
             signedMarkerUrl ? (
-              <div className="grid">
-                <div className="[grid-area:1/1]" style={{ backgroundImage: `url(${signedFileUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', width: '100%', paddingBottom: '141%' }} />
+              <div className="grid" style={{ touchAction: 'pan-y' }}>
+                <div className="[grid-area:1/1]" style={{ backgroundImage: `url(${signedFileUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', width: '100%', paddingBottom: '141%', touchAction: 'pan-y' }} />
                 <img src={signedMarkerUrl} alt="" className="w-full h-auto block pointer-events-none [grid-area:1/1]" draggable={false} style={{ touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' }} />
               </div>
             ) : (
-              <div style={{ backgroundImage: `url(${signedFileUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', width: '100%', paddingBottom: '141%' }} />
+              <div style={{ backgroundImage: `url(${signedFileUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', width: '100%', paddingBottom: '141%', touchAction: 'pan-y' }} />
             )
           ) : (
             <div
