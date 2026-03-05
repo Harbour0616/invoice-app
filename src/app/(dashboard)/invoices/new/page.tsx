@@ -9,7 +9,7 @@ export default async function InvoiceNewPage() {
   ]);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col px-12">
+    <div className="flex flex-col px-4 md:px-12 md:h-[calc(100vh-4rem)]">
       <h1 className="text-xl font-bold mb-4 shrink-0">請求書入力</h1>
       <div className="flex-1 min-h-0">
         <InvoiceNewClient

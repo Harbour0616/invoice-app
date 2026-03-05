@@ -139,42 +139,34 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           <div className="px-4 py-2 border-b border-border">
             <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
           </div>
-          <div
-            className="relative w-full overflow-auto"
-            style={{ touchAction: "pinch-zoom" }}
-          >
-            {isImagePath(invoice.pdf_file_path) ? (
-              <div className="relative">
-                <img
-                  src={signedFileUrl}
-                  alt="請求書画像"
-                  className="w-full h-auto block"
-                />
-                {signedMarkerUrl && (
-                  <img
-                    src={signedMarkerUrl}
-                    alt=""
-                    className="absolute inset-0 w-full h-full pointer-events-none"
-                  />
-                )}
+          {isImagePath(invoice.pdf_file_path) ? (
+            signedMarkerUrl ? (
+              <div className="grid">
+                <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block [grid-area:1/1]" />
+                <img src={signedMarkerUrl} alt="" className="w-full h-auto block pointer-events-none [grid-area:1/1]" />
               </div>
             ) : (
-              <div className="relative">
-                <iframe
-                  src={signedFileUrl}
-                  className="w-full h-[60vh] sm:h-[500px]"
-                  title="請求書PDF"
+              <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block" />
+            )
+          ) : (
+            <div
+              className="relative w-full overflow-auto"
+              style={{ touchAction: "pinch-zoom" }}
+            >
+              <iframe
+                src={signedFileUrl}
+                className="w-full h-[60vh] sm:h-[500px]"
+                title="請求書PDF"
+              />
+              {signedMarkerUrl && (
+                <img
+                  src={signedMarkerUrl}
+                  alt=""
+                  className="absolute inset-0 w-full h-full pointer-events-none"
                 />
-                {signedMarkerUrl && (
-                  <img
-                    src={signedMarkerUrl}
-                    alt=""
-                    className="absolute inset-0 w-full h-full pointer-events-none"
-                  />
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { PdfViewer, type PdfViewerHandle } from "@/components/pdf-viewer";
 import { InvoiceForm } from "./invoice-form";
 import { ResizableSplit } from "@/components/resizable-split";
@@ -16,9 +16,42 @@ type Props = {
   organizationId: string;
 };
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
+function MobileFilePreview({ file }: { file: File }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  if (!url) return null;
+
+  const isPdf = file.type === "application/pdf";
+
+  return isPdf ? (
+    <iframe src={url} className="w-full h-full border-0" title="PDF preview" />
+  ) : (
+    <img src={url} alt="添付ファイル" className="max-w-full h-auto object-contain" />
+  );
+}
+
 export function InvoiceNewClient({ vendors, sites, accounts, organizationId }: Props) {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const pdfViewerRef = useRef<PdfViewerHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   const handleFileChange = useCallback((file: File | null) => {
     setPdfFile(file);
@@ -29,12 +62,58 @@ export function InvoiceNewClient({ vendors, sites, accounts, organizationId }: P
     []
   );
 
+  if (isMobile) {
+    return (
+      <div className="flex flex-col gap-4 pb-8">
+        {/* ファイル選択 */}
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              setPdfFile(file);
+            }}
+          />
+          <button
+            type="button"
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {pdfFile ? "ファイルを変更" : "ファイルを選択"}
+          </button>
+          {pdfFile && (
+            <span className="ml-2 text-sm text-gray-600 truncate">{pdfFile.name}</span>
+          )}
+        </div>
+
+        {/* 添付プレビュー: 固定300px, iframe/imgのみ, canvas無し */}
+        {pdfFile && (
+          <div className="h-[300px] border rounded bg-gray-50 overflow-hidden">
+            <MobileFilePreview file={pdfFile} />
+          </div>
+        )}
+
+        {/* 請求書フォーム */}
+        <InvoiceForm
+          vendors={vendors}
+          sites={sites}
+          accounts={accounts}
+          pdfFile={pdfFile}
+          organizationId={organizationId}
+        />
+      </div>
+    );
+  }
+
   return (
     <ResizableSplit
       initialRatio={0.45}
       left={<PdfViewer ref={pdfViewerRef} onFileChange={handleFileChange} />}
       right={
-        <div className="pl-8 py-6 pr-4 h-full overflow-auto">
+        <div className="pl-8 py-6 pr-4 h-full overflow-y-auto">
           <InvoiceForm
             vendors={vendors}
             sites={sites}

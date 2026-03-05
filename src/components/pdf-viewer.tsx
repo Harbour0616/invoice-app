@@ -9,6 +9,18 @@ const MARKER_COLOR = "rgba(255, 255, 0, 0.18)";
 const MARKER_GUIDE_COLOR = "rgba(255, 255, 0, 0.10)";
 const MARKER_WIDTH = 14;
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export type PdfViewerHandle = {
   getMarkerImage: () => Promise<Blob | null>;
 };
@@ -23,20 +35,24 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
   const [zoom, setZoom] = useState<"page-width" | number>("page-width");
   const [isDragging, setIsDragging] = useState(false);
   const [markerEnabled, setMarkerEnabled] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const guideCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDrawingRef = useRef(false);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
-  const hasDrawnRef = useRef(false);
   // Shift直線モード用
   const straightAnchorRef = useRef<{ x: number; y: number } | null>(null);
+  const isMobile = useIsMobile();
+
+  // canvas を表示するか: マーカーONまたは描画済みのときだけ
+  const showCanvas = markerEnabled || hasDrawn;
 
   useImperativeHandle(ref, () => ({
     getMarkerImage: () => {
       const canvas = canvasRef.current;
-      if (!canvas || !hasDrawnRef.current) return Promise.resolve(null);
+      if (!canvas || !hasDrawn) return Promise.resolve(null);
       return new Promise<Blob | null>((resolve) => {
         canvas.toBlob((blob) => resolve(blob), "image/png");
       });
@@ -48,12 +64,12 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
     const container = containerRef.current;
     const canvas = canvasRef.current;
     const guide = guideCanvasRef.current;
-    if (!container || !canvas) return;
+    if (!container) return;
 
     const sync = () => {
       const w = container.offsetWidth;
       const h = container.offsetHeight;
-      if (canvas.width !== w || canvas.height !== h) {
+      if (canvas && (canvas.width !== w || canvas.height !== h)) {
         canvas.width = w;
         canvas.height = h;
       }
@@ -66,11 +82,11 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
     const observer = new ResizeObserver(sync);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [blobUrl, fileType]);
+  }, [blobUrl, fileType, showCanvas, markerEnabled]);
 
   // --- Drawing handlers ---
   const getPos = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: PointerEvent) => {
       const guide = guideCanvasRef.current;
       if (!guide) return null;
       const rect = guide.getBoundingClientRect();
@@ -106,7 +122,6 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
   const constrainPos = useCallback((anchor: { x: number; y: number }, pos: { x: number; y: number }) => {
     const dx = Math.abs(pos.x - anchor.x);
     const dy = Math.abs(pos.y - anchor.y);
-    // 水平 or 垂直、移動量が大きい方にスナップ
     if (dx >= dy) {
       return { x: pos.x, y: anchor.y };
     } else {
@@ -115,19 +130,19 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
   }, []);
 
   const onPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: PointerEvent) => {
       isDrawingRef.current = true;
-      hasDrawnRef.current = true;
+      setHasDrawn(true);
       const pos = getPos(e);
       lastPosRef.current = pos;
       straightAnchorRef.current = e.shiftKey && pos ? { ...pos } : null;
-      e.currentTarget.setPointerCapture(e.pointerId);
+      (e.target as Element).setPointerCapture(e.pointerId);
     },
     [getPos]
   );
 
   const onPointerMove = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: PointerEvent) => {
       if (!isDrawingRef.current) return;
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext("2d");
@@ -137,22 +152,18 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
 
       const isStraight = e.shiftKey;
 
-      // Shift押された瞬間にアンカー設定
       if (isStraight && !straightAnchorRef.current) {
         straightAnchorRef.current = { ...lastPosRef.current };
       }
-      // Shift離された瞬間にアンカー解除
       if (!isStraight && straightAnchorRef.current) {
         clearGuide();
         straightAnchorRef.current = null;
       }
 
       if (isStraight && straightAnchorRef.current) {
-        // 直線モード: ガイドだけ描画、確定は onPointerUp で
         const snapped = constrainPos(straightAnchorRef.current, rawPos);
         drawGuide(straightAnchorRef.current, snapped);
       } else {
-        // フリーハンドモード
         ctx.strokeStyle = MARKER_COLOR;
         ctx.lineWidth = MARKER_WIDTH;
         ctx.lineCap = "round";
@@ -168,9 +179,8 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
   );
 
   const onPointerUp = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: PointerEvent) => {
       if (isDrawingRef.current && straightAnchorRef.current) {
-        // 直線確定: ガイドをクリアしてメインキャンバスに描画
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
         const rawPos = getPos(e);
@@ -186,6 +196,8 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
         }
         clearGuide();
       }
+      // ポインターキャプチャを明示的に解放（DOM除去時のリーク防止）
+      try { (e.target as Element).releasePointerCapture(e.pointerId); } catch {}
       isDrawingRef.current = false;
       lastPosRef.current = null;
       straightAnchorRef.current = null;
@@ -193,33 +205,96 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
     [getPos, constrainPos, clearGuide]
   );
 
+  // ガイドキャンバスにネイティブ passive リスナーを登録
+  // React の合成イベントはルートに non-passive リスナーを登録するため
+  // タッチスクロールをブロックしてしまう → ネイティブに切り替え
+  useEffect(() => {
+    const guide = guideCanvasRef.current;
+    if (!guide || !markerEnabled) return;
+
+    guide.addEventListener("pointerdown", onPointerDown, { passive: true });
+    guide.addEventListener("pointermove", onPointerMove, { passive: true });
+    guide.addEventListener("pointerup", onPointerUp, { passive: true });
+    guide.addEventListener("pointerleave", onPointerUp as EventListener, { passive: true });
+
+    return () => {
+      guide.removeEventListener("pointerdown", onPointerDown);
+      guide.removeEventListener("pointermove", onPointerMove);
+      guide.removeEventListener("pointerup", onPointerUp);
+      guide.removeEventListener("pointerleave", onPointerUp as EventListener);
+    };
+  }, [markerEnabled, onPointerDown, onPointerMove, onPointerUp]);
+
+  // マーカーOFF時: コンテナ / 描画キャンバスに passive touchstart を登録し
+  // ブラウザのスクロール開始判定をブロックしない
+  useEffect(() => {
+    if (markerEnabled) return;
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container) return;
+
+    const noop = () => {};
+    const opts: AddEventListenerOptions = { passive: true };
+
+    container.addEventListener("touchstart", noop, opts);
+    container.addEventListener("touchmove", noop, opts);
+    if (canvas) {
+      canvas.addEventListener("touchstart", noop, opts);
+      canvas.addEventListener("touchmove", noop, opts);
+    }
+
+    return () => {
+      container.removeEventListener("touchstart", noop);
+      container.removeEventListener("touchmove", noop);
+      if (canvas) {
+        canvas.removeEventListener("touchstart", noop);
+        canvas.removeEventListener("touchmove", noop);
+      }
+    };
+  }, [markerEnabled, showCanvas, blobUrl]);
+
   const clearMarker = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    hasDrawnRef.current = false;
+    setHasDrawn(false);
   }, []);
 
-  const markerStyle = {
-    pointerEvents: (markerEnabled ? "auto" : "none") as React.CSSProperties["pointerEvents"],
-    cursor: markerEnabled ? "crosshair" : "default",
-  };
-
-  const markerLayers = (
+  // ---------------------------------------------------------------------------
+  // マーカーレイヤー
+  //
+  // ■ マーカーOFF & 描画なし → canvas は DOM に存在しない → タッチ干渉ゼロ
+  // ■ マーカーOFF & 描画あり → 描画キャンバスのみ表示
+  //     pointer-events: none でイベント不参加
+  //     will-change: transform で独立合成レイヤーを強制し iOS Safari の
+  //     タッチ判定干渉を回避
+  // ■ マーカーON → 両キャンバス表示、ガイド側が pointer-events: auto
+  // ---------------------------------------------------------------------------
+  const markerLayers = showCanvas ? (
     <>
-      <canvas ref={canvasRef} className="absolute inset-0" style={{ pointerEvents: "none" }} />
       <canvas
-        ref={guideCanvasRef}
+        ref={canvasRef}
         className="absolute inset-0"
-        style={markerStyle}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
+        style={{
+          pointerEvents: "none",
+          willChange: "transform",
+          touchAction: "manipulation",
+        }}
       />
+      {markerEnabled && (
+        <canvas
+          ref={guideCanvasRef}
+          className="absolute inset-0"
+          style={{
+            pointerEvents: "auto",
+            cursor: "crosshair",
+            touchAction: "none",
+          }}
+        />
+      )}
     </>
-  );
+  ) : null;
 
   // --- File handlers ---
   const handleFile = useCallback(
@@ -232,6 +307,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
       setFileType(file.type === "application/pdf" ? "pdf" : "image");
       setZoom("page-width");
       setMarkerEnabled(false);
+      setHasDrawn(false);
       onFileChange?.(file);
     },
     [onFileChange]
@@ -264,6 +340,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
     });
     setFileType(null);
     setMarkerEnabled(false);
+    setHasDrawn(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     onFileChange?.(null);
   }, [onFileChange]);
@@ -289,6 +366,32 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
 
   // --- Preview ---
   if (blobUrl && fileType) {
+    // スマホ: canvas / マーカー / ズーム 完全無効、iframe / img のみ
+    if (isMobile) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-end px-3 py-1.5 bg-card border-b border-border shrink-0">
+            <button type="button" onClick={handleClear} className="text-xs text-red-500 hover:text-red-700 cursor-pointer">
+              クリア
+            </button>
+          </div>
+          {fileType === "pdf" ? (
+            <iframe
+              src={`${blobUrl}#navpanes=0&view=FitH`}
+              className="flex-1 min-h-0 w-full border-0"
+              title="請求書PDF"
+            />
+          ) : (
+            <img
+              src={blobUrl}
+              alt="請求書画像"
+              className="w-full h-auto"
+            />
+          )}
+        </div>
+      );
+    }
+
     const iframeSrc =
       fileType === "pdf"
         ? zoom === "page-width"
@@ -340,19 +443,42 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
 
         {/* コンテンツ */}
         {fileType === "pdf" ? (
-          <div ref={containerRef} className="flex-1 relative min-h-0">
-            <iframe src={iframeSrc!} className="absolute inset-0 w-full h-full" title="請求書PDF" />
+          <div
+            ref={containerRef}
+            className="flex-1 relative min-h-0 overflow-auto"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              touchAction: markerEnabled ? "none" : "manipulation",
+            }}
+          >
+            <iframe
+              src={iframeSrc!}
+              className="absolute inset-0 w-full h-full"
+              style={{ touchAction: markerEnabled ? "none" : "manipulation" }}
+              title="請求書PDF"
+            />
             {markerLayers}
           </div>
         ) : (
-          <div className="flex-1 overflow-auto bg-muted min-h-0">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto bg-muted"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              touchAction: markerEnabled ? "none" : "manipulation",
+            }}
+          >
             <div className="flex items-start justify-center p-4">
               <div
                 ref={containerRef}
                 className="relative"
                 style={zoom === "page-width" ? { width: "100%" } : { width: `${zoom}%` }}
               >
-                <img src={blobUrl} alt="請求書画像" className="block w-full h-auto" />
+                <img
+                  src={blobUrl}
+                  alt="請求書画像"
+                  className="block w-full h-auto"
+                  draggable={false}
+                />
                 {markerLayers}
               </div>
             </div>
