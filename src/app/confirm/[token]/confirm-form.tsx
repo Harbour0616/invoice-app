@@ -142,11 +142,11 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           {isImagePath(invoice.pdf_file_path) ? (
             signedMarkerUrl ? (
               <div className="grid">
-                <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block [grid-area:1/1]" style={{ pointerEvents: 'none' }} />
-                <img src={signedMarkerUrl} alt="" className="w-full h-auto block pointer-events-none [grid-area:1/1]" />
+                <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block [grid-area:1/1]" draggable={false} style={{ pointerEvents: 'none', touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' }} />
+                <img src={signedMarkerUrl} alt="" className="w-full h-auto block pointer-events-none [grid-area:1/1]" draggable={false} style={{ touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' }} />
               </div>
             ) : (
-              <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block" style={{ pointerEvents: 'none' }} />
+              <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block" draggable={false} style={{ pointerEvents: 'none', touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' }} />
             )
           ) : (
             <div
@@ -163,6 +163,8 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                   src={signedMarkerUrl}
                   alt=""
                   className="absolute inset-0 w-full h-full pointer-events-none"
+                  draggable={false}
+                  style={{ touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' }}
                 />
               )}
             </div>
