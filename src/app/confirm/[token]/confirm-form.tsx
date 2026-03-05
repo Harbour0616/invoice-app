@@ -142,11 +142,11 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           {isImagePath(invoice.pdf_file_path) ? (
             signedMarkerUrl ? (
               <div className="grid">
-                <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block [grid-area:1/1]" />
+                <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block [grid-area:1/1]" style={{ pointerEvents: 'none' }} />
                 <img src={signedMarkerUrl} alt="" className="w-full h-auto block pointer-events-none [grid-area:1/1]" />
               </div>
             ) : (
-              <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block" />
+              <img src={signedFileUrl} alt="請求書画像" className="w-full h-auto block" style={{ pointerEvents: 'none' }} />
             )
           ) : (
             <div
