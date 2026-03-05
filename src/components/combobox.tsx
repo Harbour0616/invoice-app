@@ -124,32 +124,32 @@ export function Combobox({
         }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        className="input-bordered"
       />
       {open && (
         <div
           ref={listRef}
-          className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-border rounded-md shadow-lg"
+          className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-border"
         >
           {filtered.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-400">該当なし</div>
+            <div className="px-3 py-2 text-sm text-sub-text">該当なし</div>
           ) : (
             filtered.map((option, idx) => (
               <div
                 key={option.value}
                 data-option
                 onClick={() => handleSelect(option.value)}
-                className={`px-3 py-2 text-sm cursor-pointer ${
+                className={`py-2.5 px-3 text-sm cursor-pointer rounded-lg mx-1 ${
                   idx === highlightIndex
-                    ? "bg-primary text-white"
-                    : "hover:bg-gray-100"
-                } ${option.value === value && idx !== highlightIndex ? "font-semibold" : ""}`}
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-muted"
+                } ${option.value === value && idx !== highlightIndex ? "font-medium" : ""}`}
               >
                 <span>{option.label}</span>
                 {option.sublabel && (
                   <span
                     className={`ml-2 text-xs ${
-                      idx === highlightIndex ? "text-white/70" : "text-gray-400"
+                      idx === highlightIndex ? "text-primary/60" : "text-sub-text"
                     }`}
                   >
                     {option.sublabel}

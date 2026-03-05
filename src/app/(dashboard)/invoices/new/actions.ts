@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getOrganization } from "@/lib/get-organization";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 export async function getMasterData() {
   const { organizationId } = await getOrganization();
@@ -38,7 +39,8 @@ export async function getMasterData() {
 }
 
 type InvoiceLine = {
-  site_id: string;
+  site_id: string | null;
+  description: string | null;
   account_id: string;
   amount_excl_tax: number;
   tax_rate: number;
@@ -52,6 +54,7 @@ type CreateInvoiceInput = {
   invoice_date: string;
   invoice_number: string;
   note: string;
+  pdf_file_path?: string;
   lines: InvoiceLine[];
 };
 
@@ -76,7 +79,9 @@ export async function createInvoice(input: CreateInvoiceInput) {
       total_excl_tax: totalExclTax,
       total_tax: totalTax,
       total_incl_tax: totalInclTax,
+      pdf_file_path: input.pdf_file_path || null,
       created_by: userId,
+      updated_by: userId,
     })
     .select("id")
     .single();
@@ -88,7 +93,8 @@ export async function createInvoice(input: CreateInvoiceInput) {
   // 明細行登録
   const lines = input.lines.map((line, idx) => ({
     invoice_id: invoice.id,
-    site_id: line.site_id,
+    site_id: line.site_id || null,
+    description: line.description || null,
     account_id: line.account_id,
     amount_excl_tax: line.amount_excl_tax,
     tax_rate: line.tax_rate,
@@ -109,4 +115,52 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
   revalidatePath("/data");
   return { error: null, invoiceId: invoice.id };
+}
+
+export async function createConfirmationRequest(invoiceId: string, markerFilePath?: string) {
+  const { organizationId } = await getOrganization();
+  const supabase = await createClient();
+
+  // 請求書の所属組織を検証
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("id", invoiceId)
+    .eq("organization_id", organizationId)
+    .single();
+
+  if (!invoice) {
+    return { error: "請求書が見つかりません" };
+  }
+
+  // 既存の pending リクエストがあればそのURLを返す
+  const { data: existing } = await supabase
+    .from("confirmation_requests")
+    .select("token")
+    .eq("invoice_id", invoiceId)
+    .eq("status", "pending")
+    .single();
+
+  if (existing) {
+    const h = await headers();
+    const host = h.get("host") || "localhost:3000";
+    const protocol = h.get("x-forwarded-proto") || "http";
+    return { error: null, url: `${protocol}://${host}/confirm/${existing.token}` };
+  }
+
+  // 新規作成
+  const { data: req, error } = await supabase
+    .from("confirmation_requests")
+    .insert({ invoice_id: invoiceId, marker_file_path: markerFilePath || null })
+    .select("token")
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  const h = await headers();
+  const host = h.get("host") || "localhost:3000";
+  const protocol = h.get("x-forwarded-proto") || "http";
+  return { error: null, url: `${protocol}://${host}/confirm/${req.token}` };
 }

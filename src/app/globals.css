@@ -1,18 +1,96 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #5B7A5E;
-  --color-primary-dark: #4A6A4D;
-  --color-primary-light: #7A9A7D;
-  --color-background: #ffffff;
-  --color-foreground: #1a1a1a;
-  --color-muted: #f5f5f4;
-  --color-border: #e5e5e5;
-  --font-sans: var(--font-geist-sans);
+  --color-primary:         #2E7D64;
+  --color-primary-hover:   #256B56;
+  --color-accent:          #3FA37C;
+  --color-background:      #F7F9F8;
+  --color-card:            #FFFFFF;
+  --color-foreground:      #1F2D2A;
+  --color-border:          #E3E8E6;
+  --color-muted:           #F4F8F6;
+  --color-sub-text:        #6B7D77;
+  --color-table-separator: #EDF2F0;
+  --color-table-row-hover: #F4F8F6;
+  --font-sans: var(--font-inter), var(--font-noto-sans-jp), sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
+  font-feature-settings: "palt";
+}
+
+*,
+*::before,
+*::after {
+  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* アニメーション不要な要素を除外 */
+input[type="date"],
+iframe,
+canvas,
+img,
+svg {
+  transition: none;
+}
+
+.input-bordered {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: white;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.input-bordered:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 100, 0.15);
+}
+
+.input-bordered::placeholder {
+  color: #d1d5db;
+}
+
+.select-bordered {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: white;
+  outline: none;
+  appearance: auto;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.select-bordered:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 100, 0.15);
+}
+
+.card {
+  background: var(--color-card);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 32px;
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-sub-text);
+  font-weight: 500;
+  margin-bottom: 6px;
 }

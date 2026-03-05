@@ -51,7 +51,7 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
   return (
     <div>
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
+        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
           {error}
         </div>
       )}
@@ -62,7 +62,11 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
             setShowForm(!showForm);
             setError("");
           }}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors text-sm cursor-pointer"
+          className={`px-4 h-11 rounded-lg text-sm cursor-pointer ${
+            showForm
+              ? "border border-border text-foreground hover:bg-muted"
+              : "bg-primary text-white hover:bg-primary-hover"
+          }`}
         >
           {showForm ? "キャンセル" : "＋ 新規追加"}
         </button>
@@ -71,39 +75,39 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
       {showForm && (
         <form
           action={handleCreate}
-          className="mb-6 p-4 bg-white rounded-md shadow-sm border border-border"
+          className="card mb-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="label">
                 現場コード <span className="text-red-500">*</span>
               </label>
               <input
                 name="code"
                 required
-                className="w-full px-3 py-2 border border-border rounded-md text-sm"
+                className="input-bordered"
                 placeholder="例: S001"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="label">
                 現場名 <span className="text-red-500">*</span>
               </label>
               <input
                 name="name"
                 required
-                className="w-full px-3 py-2 border border-border rounded-md text-sm"
+                className="input-bordered"
                 placeholder="例: ○○邸新築工事"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="label">
                 ステータス
               </label>
               <select
                 name="status"
                 defaultValue="active"
-                className="w-full px-3 py-2 border border-border rounded-md text-sm"
+                className="select-bordered"
               >
                 <option value="active">進行中</option>
                 <option value="completed">完了</option>
@@ -114,7 +118,7 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 text-sm cursor-pointer"
+              className="px-4 h-11 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 text-sm cursor-pointer"
             >
               {loading ? "登録中..." : "登録"}
             </button>
@@ -122,26 +126,26 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
         </form>
       )}
 
-      <div className="bg-white rounded-md shadow-sm border border-border overflow-hidden">
+      <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-border">
+          <thead className="border-b border-border">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">コード</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">現場名</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">ステータス</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">操作</th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">コード</th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">現場名</th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">ステータス</th>
+              <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">操作</th>
             </tr>
           </thead>
           <tbody>
             {sites.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={4} className="px-4 py-8 text-center text-sub-text">
                   現場が登録されていません
                 </td>
               </tr>
             ) : (
               sites.map((site) => (
-                <tr key={site.id} className="border-b border-border last:border-b-0 hover:bg-gray-50">
+                <tr key={site.id} className="border-b border-table-separator last:border-b-0 hover:bg-table-row-hover">
                   {editingId === site.id ? (
                     <EditRow
                       site={site}
@@ -151,20 +155,20 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
                     />
                   ) : (
                     <>
-                      <td className="px-4 py-3 font-mono">{site.code}</td>
-                      <td className="px-4 py-3">{site.name}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5 font-mono">{site.code}</td>
+                      <td className="px-4 py-3.5">{site.name}</td>
+                      <td className="px-4 py-3.5">
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${
                             site.status === "active"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-500"
+                              ? "bg-accent/10 text-accent"
+                              : "bg-muted text-sub-text"
                           }`}
                         >
                           {site.status === "active" ? "進行中" : "完了"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right space-x-2">
+                      <td className="px-4 py-3.5 text-right space-x-2">
                         <button
                           onClick={() => {
                             setEditingId(site.id);
@@ -176,7 +180,7 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
                         </button>
                         <button
                           onClick={() => handleDelete(site.id, site.name)}
-                          className="text-red-500 hover:underline cursor-pointer"
+                          className="text-red-400 hover:text-red-600 cursor-pointer"
                         >
                           削除
                         </button>
@@ -209,24 +213,24 @@ function EditRow({
   };
 
   return (
-    <td colSpan={4} className="px-4 py-3">
+    <td colSpan={4} className="px-4 py-3.5">
       <form action={handleSubmit} className="flex items-center gap-3">
         <input
           name="code"
           defaultValue={site.code}
           required
-          className="w-24 px-2 py-1 border border-border rounded text-sm"
+          className="w-24 input-bordered"
         />
         <input
           name="name"
           defaultValue={site.name}
           required
-          className="flex-1 px-2 py-1 border border-border rounded text-sm"
+          className="flex-1 input-bordered"
         />
         <select
           name="status"
           defaultValue={site.status}
-          className="px-2 py-1 border border-border rounded text-sm"
+          className="select-bordered w-24"
         >
           <option value="active">進行中</option>
           <option value="completed">完了</option>
@@ -234,14 +238,14 @@ function EditRow({
         <button
           type="submit"
           disabled={loading}
-          className="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary-dark disabled:opacity-50 cursor-pointer"
+          className="px-3 py-1 bg-primary text-white rounded-lg text-sm hover:bg-primary-hover disabled:opacity-50 cursor-pointer"
         >
           保存
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300 cursor-pointer"
+          className="px-3 py-1 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer"
         >
           取消
         </button>

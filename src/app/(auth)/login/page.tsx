@@ -53,19 +53,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center text-primary mb-2">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-10">
+        <h1 className="text-2xl font-bold text-center text-foreground mb-2">
           支払請求書登録
         </h1>
-        <p className="text-sm text-gray-500 text-center mb-8">
+        <p className="text-sm text-sub-text text-center mb-8">
           {isSignUp ? "新規アカウント作成" : "ログイン"}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {isSignUp && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="label">
                 組織名
               </label>
               <input
@@ -73,13 +73,13 @@ export default function LoginPage() {
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
                 placeholder="例: 株式会社○○建設"
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="input-bordered"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="label">
               メールアドレス
             </label>
             <input
@@ -88,12 +88,12 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="email@example.com"
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="input-bordered"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="label">
               パスワード
             </label>
             <input
@@ -103,12 +103,12 @@ export default function LoginPage() {
               required
               minLength={6}
               placeholder="6文字以上"
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="input-bordered"
             />
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
               {error}
             </div>
           )}
@@ -116,7 +116,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 transition-colors cursor-pointer"
+            className="w-full h-11 px-4 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 cursor-pointer font-medium"
           >
             {loading
               ? "処理中..."

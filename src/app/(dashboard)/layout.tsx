@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
+import { NavLinks } from "@/components/nav-links";
 
 export default async function DashboardLayout({
   children,
@@ -15,41 +16,25 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const navItems = [
-    { href: "/invoices/new", label: "請求書入力" },
-    { href: "/data", label: "データ一覧" },
-    { href: "/master/vendors", label: "取引先" },
-    { href: "/master/sites", label: "現場" },
-    { href: "/master/accounts", label: "勘定科目" },
-  ];
-
   return (
-    <div className="min-h-screen bg-muted">
-      <header className="bg-primary text-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/invoices/new" className="text-lg font-bold">
-            支払請求書登録
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm opacity-80">{user.email}</span>
+    <div className="min-h-screen bg-background">
+      <header className="h-16 bg-card border-b border-border">
+        <div className="max-w-[1200px] mx-auto px-12 h-full flex items-center justify-between">
+          <div className="shrink-0">
+            <Link href="/invoices/new" className="text-base font-bold text-primary tracking-wide">
+              支払請求書登録
+            </Link>
+          </div>
+          <nav className="flex">
+            <NavLinks />
+          </nav>
+          <div className="shrink-0 flex items-center gap-4">
+            <span className="text-sm text-sub-text">{user.email}</span>
             <LogoutButton />
           </div>
         </div>
-        <nav className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="px-4 py-2 text-sm rounded-t-md hover:bg-primary-dark transition-colors text-white/80 hover:text-white"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </nav>
       </header>
-      <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+      <main className="py-8">{children}</main>
     </div>
   );
 }

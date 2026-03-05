@@ -65,12 +65,23 @@ export type Invoice = {
 export type InvoiceLine = {
   id: string;
   invoice_id: string;
-  site_id: string;
+  site_id: string | null;
   account_id: string;
+  description: string | null;
   amount_excl_tax: number;
   tax_rate: number;
   tax_amount: number;
   amount_incl_tax: number;
   line_order: number;
   created_at: string;
+};
+
+export type ConfirmationRequest = {
+  id: string;
+  invoice_id: string;
+  token: string;
+  status: "pending" | "completed";
+  responses: Record<string, string> | null;
+  created_at: string;
+  completed_at: string | null;
 };
