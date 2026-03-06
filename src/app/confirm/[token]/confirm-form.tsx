@@ -471,24 +471,28 @@ function PdfViewer({ src, maxHeight }: { src: string; maxHeight: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   const g = useRef({
-    scale: 1,
-    isPinching: false,
-    pinchDist0: 0,
-    pinchScale0: 1,
+    scale: 1, tx: 0, ty: 0,
+    isDragging: false, isPinching: false,
+    lastX: 0, lastY: 0,
+    pinchDist0: 0, pinchScale0: 1,
+    pinchTx0: 0, pinchTy0: 0,
+    pinchMidX: 0, pinchMidY: 0,
     lastTapTime: 0,
   });
 
-  const applyScale = (animate = false) => {
+  const apply = (animate = false) => {
     const el = contentRef.current;
     if (!el) return;
-    const { scale } = g.current;
+    const { tx, ty, scale } = g.current;
     el.style.transition = animate ? "transform 0.25s ease" : "none";
-    el.style.transform = `scale(${scale})`;
+    el.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   };
 
-  const resetScale = () => {
+  const reset = () => {
     g.current.scale = 1;
-    applyScale(true);
+    g.current.tx = 0;
+    g.current.ty = 0;
+    apply(true);
   };
 
   useEffect(() => {
@@ -503,18 +507,27 @@ function PdfViewer({ src, maxHeight }: { src: string; maxHeight: string }) {
       if (e.touches.length === 2) {
         e.preventDefault();
         st.isPinching = true;
+        st.isDragging = false;
         st.pinchDist0 = dist(e.touches[0], e.touches[1]);
         st.pinchScale0 = st.scale;
+        st.pinchTx0 = st.tx;
+        st.pinchTy0 = st.ty;
+        const rect = el.getBoundingClientRect();
+        st.pinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        st.pinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
       } else if (e.touches.length === 1) {
         const now = Date.now();
         if (now - st.lastTapTime < 300) {
           e.preventDefault();
-          resetScale();
+          reset();
           st.lastTapTime = 0;
           return;
         }
         st.lastTapTime = now;
-        // 1本指はネイティブスクロールに任せる（preventDefaultしない）
+        e.preventDefault();
+        st.isDragging = true;
+        st.lastX = e.touches[0].clientX;
+        st.lastY = e.touches[0].clientY;
       }
     };
 
@@ -523,24 +536,82 @@ function PdfViewer({ src, maxHeight }: { src: string; maxHeight: string }) {
       if (st.isPinching && e.touches.length === 2) {
         e.preventDefault();
         const d = dist(e.touches[0], e.touches[1]);
-        st.scale = Math.max(0.5, Math.min(5, st.pinchScale0 * (d / st.pinchDist0)));
-        applyScale();
+        const newScale = Math.max(0.5, Math.min(5, st.pinchScale0 * (d / st.pinchDist0)));
+        const ratio = newScale / st.pinchScale0;
+        st.tx = st.pinchMidX - ratio * (st.pinchMidX - st.pinchTx0);
+        st.ty = st.pinchMidY - ratio * (st.pinchMidY - st.pinchTy0);
+        st.scale = newScale;
+        apply();
+      } else if (st.isDragging && e.touches.length === 1) {
+        e.preventDefault();
+        st.tx += e.touches[0].clientX - st.lastX;
+        st.ty += e.touches[0].clientY - st.lastY;
+        st.lastX = e.touches[0].clientX;
+        st.lastY = e.touches[0].clientY;
+        apply();
       }
-      // 1本指はネイティブスクロールに任せる
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) g.current.isPinching = false;
+      const st = g.current;
+      if (e.touches.length < 2) st.isPinching = false;
+      if (e.touches.length === 0) st.isDragging = false;
     };
+
+    const onMouseDown = (e: MouseEvent) => {
+      e.preventDefault();
+      g.current.isDragging = true;
+      g.current.lastX = e.clientX;
+      g.current.lastY = e.clientY;
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      const st = g.current;
+      if (!st.isDragging) return;
+      st.tx += e.clientX - st.lastX;
+      st.ty += e.clientY - st.lastY;
+      st.lastX = e.clientX;
+      st.lastY = e.clientY;
+      apply();
+    };
+    const onMouseUp = () => { g.current.isDragging = false; };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const st = g.current;
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newScale = Math.max(0.5, Math.min(5, st.scale * factor));
+      const rect = el.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const ratio = newScale / st.scale;
+      st.tx = mx - ratio * (mx - st.tx);
+      st.ty = my - ratio * (my - st.ty);
+      st.scale = newScale;
+      apply();
+    };
+
+    const onDblClick = () => reset();
 
     el.addEventListener("touchstart", onTouchStart, { passive: false });
     el.addEventListener("touchmove", onTouchMove, { passive: false });
     el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("mousedown", onMouseDown);
+    el.addEventListener("mousemove", onMouseMove);
+    el.addEventListener("mouseup", onMouseUp);
+    el.addEventListener("mouseleave", onMouseUp);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("dblclick", onDblClick);
 
     return () => {
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("mousedown", onMouseDown);
+      el.removeEventListener("mousemove", onMouseMove);
+      el.removeEventListener("mouseup", onMouseUp);
+      el.removeEventListener("mouseleave", onMouseUp);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("dblclick", onDblClick);
     };
   }, []);
 
@@ -548,15 +619,14 @@ function PdfViewer({ src, maxHeight }: { src: string; maxHeight: string }) {
     <div
       ref={containerRef}
       style={{
-        overflowY: "auto",
-        overflowX: "hidden",
-        WebkitOverflowScrolling: "touch",
-        touchAction: "pan-y pinch-zoom",
+        overflow: "hidden",
+        touchAction: "none",
+        userSelect: "none",
+        cursor: "grab",
         maxHeight,
-        padding: "8px",
       }}
     >
-      <div ref={contentRef} style={{ transformOrigin: "center top" }}>
+      <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
         <iframe
           src={src}
           style={{
