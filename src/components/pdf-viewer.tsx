@@ -46,6 +46,14 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
   const straightAnchorRef = useRef<{ x: number; y: number } | null>(null);
   const isMobile = useIsMobile();
 
+  // --- OCR選択用 state / ref ---
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrToast, setOcrToast] = useState(false);
+  const ocrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const ocrStartRef = useRef<{ x: number; y: number } | null>(null);
+  const ocrRectRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const currentFileRef = useRef<File | null>(null);
+
   // canvas を表示するか: マーカーONまたは描画済みのときだけ
   const showCanvas = markerEnabled || hasDrawn;
 
@@ -66,6 +74,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
     const guide = guideCanvasRef.current;
     if (!container) return;
 
+    const ocrCanvas = ocrCanvasRef.current;
     const sync = () => {
       const w = container.offsetWidth;
       const h = container.offsetHeight;
@@ -76,6 +85,10 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
       if (guide && (guide.width !== w || guide.height !== h)) {
         guide.width = w;
         guide.height = h;
+      }
+      if (ocrCanvas && (ocrCanvas.width !== w || ocrCanvas.height !== h)) {
+        ocrCanvas.width = w;
+        ocrCanvas.height = h;
       }
     };
     sync();
@@ -262,6 +275,191 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
   }, []);
 
   // ---------------------------------------------------------------------------
+  // OCR: ドラッグ選択 → テキスト抽出 → クリップボードコピー
+  // ---------------------------------------------------------------------------
+  const performOcr = useCallback(async () => {
+    const container = containerRef.current;
+    const rect = ocrRectRef.current;
+    if (!container || !rect || !blobUrl) return;
+
+    setOcrLoading(true);
+    try {
+      let base64: string;
+      let mediaType: string;
+      let regionHint: { left: number; top: number; width: number; height: number } | undefined;
+
+      if (fileType === "image") {
+        // 画像: img要素をオフスクリーンcanvasに描画 → 選択範囲をcrop
+        const img = container.querySelector("img");
+        if (!img) return;
+        const offscreen = document.createElement("canvas");
+        offscreen.width = img.naturalWidth;
+        offscreen.height = img.naturalHeight;
+        const offCtx = offscreen.getContext("2d")!;
+        offCtx.drawImage(img, 0, 0);
+
+        // 表示座標→自然座標に変換
+        const displayW = img.clientWidth;
+        const displayH = img.clientHeight;
+        const scaleX = img.naturalWidth / displayW;
+        const scaleY = img.naturalHeight / displayH;
+        const sx = Math.max(0, rect.x * scaleX);
+        const sy = Math.max(0, rect.y * scaleY);
+        const sw = Math.min(img.naturalWidth - sx, rect.w * scaleX);
+        const sh = Math.min(img.naturalHeight - sy, rect.h * scaleY);
+
+        const cropCanvas = document.createElement("canvas");
+        cropCanvas.width = sw;
+        cropCanvas.height = sh;
+        const cropCtx = cropCanvas.getContext("2d")!;
+        cropCtx.drawImage(offscreen, sx, sy, sw, sh, 0, 0, sw, sh);
+
+        const dataUrl = cropCanvas.toDataURL("image/png");
+        base64 = dataUrl.split(",")[1];
+        mediaType = "image/png";
+      } else {
+        // PDF: ファイル全体をbase64化 + regionHint付きでdocument typeとして送信
+        const file = currentFileRef.current;
+        if (!file) return;
+        const buf = await file.arrayBuffer();
+        base64 = btoa(
+          new Uint8Array(buf).reduce((s, b) => s + String.fromCharCode(b), "")
+        );
+        mediaType = "application/pdf";
+
+        const containerW = container.offsetWidth;
+        const containerH = container.offsetHeight;
+        regionHint = {
+          left: rect.x / containerW,
+          top: rect.y / containerH,
+          width: rect.w / containerW,
+          height: rect.h / containerH,
+        };
+      }
+
+      const res = await fetch("/api/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64, mediaType, regionHint }),
+      });
+
+      if (!res.ok) throw new Error("OCR API error");
+      const { text } = await res.json();
+
+      if (text) {
+        await navigator.clipboard.writeText(text);
+        setOcrToast(true);
+        setTimeout(() => setOcrToast(false), 2000);
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+    } finally {
+      setOcrLoading(false);
+      // OCRキャンバスクリア
+      const ocrCanvas = ocrCanvasRef.current;
+      const ctx = ocrCanvas?.getContext("2d");
+      if (ocrCanvas && ctx) ctx.clearRect(0, 0, ocrCanvas.width, ocrCanvas.height);
+      ocrRectRef.current = null;
+    }
+  }, [blobUrl, fileType]);
+
+  // OCRドラッグイベントハンドラ
+  useEffect(() => {
+    if (markerEnabled || !blobUrl || isMobile) return;
+    const ocrCanvas = ocrCanvasRef.current;
+    if (!ocrCanvas) return;
+
+    const getOcrPos = (e: PointerEvent) => {
+      const r = ocrCanvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - r.left) * (ocrCanvas.width / r.width),
+        y: (e.clientY - r.top) * (ocrCanvas.height / r.height),
+      };
+    };
+
+    const onDown = (e: PointerEvent) => {
+      const pos = getOcrPos(e);
+      ocrStartRef.current = pos;
+      ocrRectRef.current = null;
+      (e.target as Element).setPointerCapture(e.pointerId);
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (!ocrStartRef.current) return;
+      const pos = getOcrPos(e);
+      const x = Math.min(ocrStartRef.current.x, pos.x);
+      const y = Math.min(ocrStartRef.current.y, pos.y);
+      const w = Math.abs(pos.x - ocrStartRef.current.x);
+      const h = Math.abs(pos.y - ocrStartRef.current.y);
+      ocrRectRef.current = { x, y, w, h };
+
+      const ctx = ocrCanvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, ocrCanvas.width, ocrCanvas.height);
+      ctx.fillStyle = "rgba(59, 130, 246, 0.15)";
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.6)";
+      ctx.lineWidth = 2;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
+    };
+
+    const onUp = (e: PointerEvent) => {
+      try { (e.target as Element).releasePointerCapture(e.pointerId); } catch {}
+      if (!ocrStartRef.current) return;
+      const rect = ocrRectRef.current;
+      ocrStartRef.current = null;
+
+      if (rect && rect.w > 10 && rect.h > 10) {
+        performOcr();
+      } else {
+        // 小さすぎる選択はクリア
+        const ctx = ocrCanvas.getContext("2d");
+        if (ctx) ctx.clearRect(0, 0, ocrCanvas.width, ocrCanvas.height);
+        ocrRectRef.current = null;
+      }
+    };
+
+    ocrCanvas.addEventListener("pointerdown", onDown, { passive: true });
+    ocrCanvas.addEventListener("pointermove", onMove, { passive: true });
+    ocrCanvas.addEventListener("pointerup", onUp, { passive: true });
+
+    return () => {
+      ocrCanvas.removeEventListener("pointerdown", onDown);
+      ocrCanvas.removeEventListener("pointermove", onMove);
+      ocrCanvas.removeEventListener("pointerup", onUp);
+    };
+  }, [markerEnabled, blobUrl, isMobile, performOcr]);
+
+  // OCRレイヤー
+  const ocrLayers = !markerEnabled && blobUrl && !isMobile ? (
+    <>
+      <canvas
+        ref={ocrCanvasRef}
+        className="absolute inset-0"
+        style={{ pointerEvents: "auto", cursor: "crosshair", zIndex: 20 }}
+      />
+      {ocrLoading && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black/20"
+          style={{ zIndex: 30 }}
+        >
+          <div className="bg-white rounded-lg px-4 py-2 shadow text-sm text-gray-700">
+            読み取り中...
+          </div>
+        </div>
+      )}
+      {ocrToast && (
+        <div
+          className="absolute top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white text-sm px-4 py-2 rounded-lg shadow"
+          style={{ zIndex: 30 }}
+        >
+          コピーしました
+        </div>
+      )}
+    </>
+  ) : null;
+
+  // ---------------------------------------------------------------------------
   // マーカーレイヤー
   //
   // ■ マーカーOFF & 描画なし → canvas は DOM に存在しない → タッチ干渉ゼロ
@@ -308,6 +506,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
       setZoom("page-width");
       setMarkerEnabled(false);
       setHasDrawn(false);
+      currentFileRef.current = file;
       onFileChange?.(file);
     },
     [onFileChange]
@@ -341,6 +540,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
     setFileType(null);
     setMarkerEnabled(false);
     setHasDrawn(false);
+    currentFileRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = "";
     onFileChange?.(null);
   }, [onFileChange]);
@@ -458,6 +658,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
               title="請求書PDF"
             />
             {markerLayers}
+            {ocrLayers}
           </div>
         ) : (
           <div
@@ -480,6 +681,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, Props>(function PdfViewer({
                   draggable={false}
                 />
                 {markerLayers}
+                {ocrLayers}
               </div>
             </div>
           </div>
