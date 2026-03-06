@@ -142,7 +142,8 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           {isImagePath(invoice.pdf_file_path) ? (
             <img
               src={signedFileUrl}
-              style={{ width: '100%', height: 'auto', display: 'block' }}
+              draggable={false}
+              style={{ width: '100%', height: 'auto', display: 'block', WebkitTouchCallout: 'none', userSelect: 'none', pointerEvents: 'none' }}
               alt=""
             />
           ) : (
