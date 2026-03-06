@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { createInvoice, createConfirmationRequest } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import { Combobox } from "@/components/combobox";
+import { InvoiceLineBlock } from "./invoice-line-block";
 
 type Vendor = { id: string; code: string; name: string; furigana: string | null };
 type Site = { id: string; code: string; name: string };
@@ -331,17 +332,17 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
   return (
     <div data-invoice-form onKeyDown={handleKeyDown}>
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-[14px] text-sm">
           {error}
         </div>
       )}
       {success && (
-        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
+        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-[14px] text-sm">
           {success}
         </div>
       )}
       {hasUnknownSites && lastInvoiceId && (
-        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-[14px]">
           <p className="text-sm text-amber-800 mb-3">
             現場不明の明細行があります。社長に確認依頼を送信できます。
           </p>
@@ -351,12 +352,12 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
                 type="text"
                 readOnly
                 value={confirmUrl}
-                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm bg-white"
+                className="flex-1 px-3 py-2 border border-amber-300 rounded-[14px] text-sm bg-white"
               />
               <button
                 type="button"
                 onClick={handleCopyUrl}
-                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm cursor-pointer whitespace-nowrap"
+                className="px-4 py-2 bg-amber-600 text-white rounded-[14px] hover:bg-amber-700 text-sm cursor-pointer whitespace-nowrap"
               >
                 {copied ? "コピー済み" : "URLコピー"}
               </button>
@@ -366,7 +367,7 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
               type="button"
               onClick={handleCreateConfirmation}
               disabled={confirmLoading}
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 text-sm cursor-pointer"
+              className="px-4 py-2 bg-amber-600 text-white rounded-[14px] hover:bg-amber-700 disabled:opacity-50 text-sm cursor-pointer"
             >
               {confirmLoading ? "作成中..." : "確認依頼を作成"}
             </button>
@@ -374,9 +375,10 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
         </div>
       )}
 
-      {/* ヘッダー部 */}
+      {/* 基本情報カード */}
       <div className="card mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+        <h3 className="text-sm font-semibold text-foreground mb-5">基本情報</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           <div>
             <label className="label">
               請求日 <span className="text-red-500">*</span>
@@ -426,172 +428,70 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
         </div>
       </div>
 
-      {/* 明細行 */}
-      <div className="card mb-6 !p-0 overflow-x-auto">
-        {/* 明細行ヘッダーラベル */}
-        <div className="hidden md:flex items-end gap-4 px-6 pt-6 pb-2">
-          <div className="min-w-[200px] flex-[2] text-xs text-sub-text font-semibold uppercase tracking-wider">現場名 *</div>
-          <div className="w-10 text-xs text-sub-text font-semibold text-center">不明</div>
-          <div className="min-w-[140px] flex-[1.2] text-xs text-sub-text font-semibold uppercase tracking-wider">品名・摘要</div>
-          <div className="min-w-[160px] flex-[1.5] text-xs text-sub-text font-semibold uppercase tracking-wider">勘定科目 *</div>
-          <div className="min-w-[120px] flex-1 text-xs text-sub-text font-semibold uppercase tracking-wider text-right">税抜金額 *</div>
-          <div className="w-[90px] text-xs text-sub-text font-semibold text-center">税率</div>
-          <div className="min-w-[110px] flex-1 text-xs text-sub-text font-semibold uppercase tracking-wider text-right">消費税額</div>
-          <div className="min-w-[120px] flex-1 text-xs text-sub-text font-semibold uppercase tracking-wider text-right">税込金額</div>
-          <div style={{ position: 'sticky', right: 0, minWidth: '36px', background: 'var(--color-card)', zIndex: 1 }}></div>
-        </div>
+      {/* 明細入力カード */}
+      <div className="card mb-6">
+        <h3 className="text-sm font-semibold text-foreground mb-5">明細入力</h3>
 
-        <div className="px-6 pb-6">
-          {lines.map((line, idx) => (
-            <div key={line.key} className={`flex items-end gap-4 py-4 px-2 hover:bg-table-row-hover rounded-lg ${idx < lines.length - 1 ? "border-b border-table-separator" : ""}`}>
-              <div className="min-w-[200px] flex-[2]">
-                <div className="md:hidden text-xs text-sub-text mb-1">現場名</div>
-                {line.site_unknown ? (
-                  <span className="text-sm text-amber-600 bg-amber-50 px-3 py-1.5 rounded block">
-                    現場不明
-                  </span>
-                ) : (
-                  <Combobox
-                    options={siteOptions}
-                    value={line.site_id}
-                    onChange={(v) => updateLine(line.key, "site_id", v)}
-                    placeholder="現場を検索..."
-                  />
-                )}
-              </div>
-              <div className="w-10 text-center pb-1">
-                <input
-                  type="checkbox"
-                  checked={line.site_unknown}
-                  onChange={() => toggleSiteUnknown(line.key)}
-                  className="w-4 h-4 cursor-pointer accent-amber-500"
-                  title="現場不明"
-                />
-              </div>
-              <div className="min-w-[140px] flex-[1.2]">
-                <div className="md:hidden text-xs text-sub-text mb-1">品名・摘要</div>
-                <input
-                  type="text"
-                  value={line.description}
-                  onChange={(e) => updateLine(line.key, "description", e.target.value)}
-                  className="input-bordered"
-                  placeholder="品名・摘要"
-                />
-              </div>
-              <div className="min-w-[160px] flex-[1.5]">
-                <div className="md:hidden text-xs text-sub-text mb-1">勘定科目</div>
-                <Combobox
-                  options={accountOptions}
-                  value={line.account_id}
-                  onChange={(v) => {
-                    updateLine(line.key, "account_id", v);
-                    setLastAccountId(v);
-                  }}
-                  placeholder="科目..."
-                />
-              </div>
-              <div className="min-w-[120px] flex-1">
-                <div className="md:hidden text-xs text-sub-text mb-1">税抜金額</div>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatInputNumber(line.amount_excl_tax)}
-                  onChange={(e) =>
-                    updateLine(line.key, "amount_excl_tax", parseInputNumber(e.target.value))
-                  }
-                  className="input-bordered text-right"
-                  placeholder="0"
-                />
-              </div>
-              <div className="w-[90px]">
-                <div className="md:hidden text-xs text-sub-text mb-1">税率</div>
-                <select
-                  value={line.tax_rate}
-                  onChange={(e) =>
-                    updateLine(line.key, "tax_rate", e.target.value)
-                  }
-                  className="select-bordered"
-                >
-                  <option value="0.10">10%</option>
-                  <option value="0.08">8%（軽減）</option>
-                  <option value="0.00">0%（非課税）</option>
-                </select>
-              </div>
-              <div className="min-w-[110px] flex-1">
-                <div className="md:hidden text-xs text-sub-text mb-1">消費税額</div>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatInputNumber(line.tax_amount)}
-                  onChange={(e) =>
-                    updateLine(line.key, "tax_amount", parseInputNumber(e.target.value))
-                  }
-                  className="input-bordered text-right"
-                  placeholder="0"
-                />
-              </div>
-              <div className="min-w-[120px] flex-1 text-right font-mono pb-1">
-                {line.amount_incl_tax > 0
-                  ? formatNumber(line.amount_incl_tax)
-                  : "—"}
-              </div>
-              <div style={{ position: 'sticky', right: 0, minWidth: '36px', flexShrink: 0, background: 'var(--color-card)', zIndex: 1 }}>
-                <button
-                  type="button"
-                  onClick={() => removeLine(line.key)}
-                  disabled={lines.length <= 1}
-                  style={{ minWidth: '36px', minHeight: '36px', color: 'red', fontSize: '20px', background: 'none', border: 'none', cursor: lines.length <= 1 ? 'default' : 'pointer', opacity: lines.length <= 1 ? 0.3 : 1 }}
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-          ))}
+        {lines.map((line, idx) => (
+          <InvoiceLineBlock
+            key={line.key}
+            line={line}
+            index={idx}
+            siteOptions={siteOptions}
+            accountOptions={accountOptions}
+            canDelete={lines.length > 1}
+            onUpdateLine={updateLine}
+            onToggleSiteUnknown={toggleSiteUnknown}
+            onRemoveLine={removeLine}
+            onLastAccountChange={setLastAccountId}
+          />
+        ))}
 
-          {/* 行追加ボタン */}
-          <button
-            type="button"
-            onClick={addLine}
-            className="w-full mt-3 border border-dashed border-border text-sub-text hover:border-primary hover:text-primary rounded-lg py-3 text-center text-sm cursor-pointer"
-          >
-            ＋ 行を追加
-          </button>
+        {/* 行追加ボタン */}
+        <button
+          type="button"
+          onClick={addLine}
+          className="w-full mt-2 bg-mint text-primary hover:bg-primary/10 rounded-[14px] py-3 text-center text-sm font-medium cursor-pointer"
+        >
+          ＋ 行を追加
+        </button>
+      </div>
+
+      {/* 合計バー */}
+      <div className="bg-card rounded-[16px] border border-border px-6 py-4 mb-6">
+        <div className="flex justify-end items-center gap-8 text-sm">
+          <div>
+            <span className="text-sub-text">税抜合計：</span>
+            <span className="font-mono font-bold ml-2">
+              {formatNumber(totalExclTax)}
+            </span>
+          </div>
+          <div>
+            <span className="text-sub-text">消費税合計：</span>
+            <span className="font-mono font-bold ml-2">
+              {formatNumber(totalTax)}
+            </span>
+          </div>
+          <div>
+            <span className="text-sub-text">税込合計：</span>
+            <span className="font-mono text-2xl font-bold ml-2 text-primary">
+              {formatNumber(totalInclTax)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 合計 */}
-      <div className="mt-6 flex justify-end gap-8 text-sm">
-        <div>
-          <span className="text-sub-text">税抜合計：</span>
-          <span className="font-mono font-bold ml-2">
-            {formatNumber(totalExclTax)}
-          </span>
-        </div>
-        <div>
-          <span className="text-sub-text">消費税合計：</span>
-          <span className="font-mono font-bold ml-2">
-            {formatNumber(totalTax)}
-          </span>
-        </div>
-        <div>
-          <span className="text-sub-text">税込合計：</span>
-          <span className="font-mono text-2xl font-bold ml-2 text-primary">
-            {formatNumber(totalInclTax)}
-          </span>
-        </div>
-      </div>
-
-      {/* 登録ボタン */}
-      <div className="flex items-center gap-4 mt-8">
+      {/* アクションエリア */}
+      <div className="flex items-center gap-4 mb-8">
         <button
           type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="bg-primary text-white rounded-lg px-10 h-11 text-sm font-medium hover:bg-primary-hover disabled:opacity-50 cursor-pointer"
+          className="bg-primary text-white rounded-[14px] min-w-[180px] h-[50px] text-sm font-medium hover:bg-primary-hover disabled:opacity-50 cursor-pointer"
         >
-          {loading ? "登録中..." : "登録"}
+          {loading ? "登録中..." : "登録する"}
         </button>
-        <span className="text-xs text-sub-text">Ctrl + Enter でも登録できます</span>
+        <span className="text-xs text-sub-text">Ctrl + Enter で登録できます</span>
       </div>
     </div>
   );

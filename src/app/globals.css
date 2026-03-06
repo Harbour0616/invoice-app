@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary:         #2E7D64;
-  --color-primary-hover:   #256B56;
+  --color-primary:         #2F9E77;
+  --color-primary-hover:   #1F7A5C;
   --color-accent:          #3FA37C;
-  --color-background:      #F7F9F8;
+  --color-background:      #F7FBF9;
   --color-card:            #FFFFFF;
-  --color-foreground:      #1F2D2A;
-  --color-border:          #E3E8E6;
+  --color-foreground:      #1F2D29;
+  --color-border:          #D8E5E0;
   --color-muted:           #F4F8F6;
-  --color-sub-text:        #6B7D77;
+  --color-sub-text:        #7B8A86;
+  --color-mint:            #DDF5EC;
   --color-table-separator: #EDF2F0;
   --color-table-row-hover: #F4F8F6;
   --font-sans: var(--font-inter), var(--font-noto-sans-jp), sans-serif;
@@ -46,7 +47,7 @@ svg {
   font-size: 0.875rem;
   line-height: 1.25rem;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: white;
   outline: none;
   transition: border-color 150ms ease, box-shadow 150ms ease;
@@ -54,11 +55,11 @@ svg {
 
 .input-bordered:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(46, 125, 100, 0.15);
+  box-shadow: 0 0 0 3px rgba(47, 158, 119, 0.15);
 }
 
 .input-bordered::placeholder {
-  color: #d1d5db;
+  color: #b0b8b5;
 }
 
 .select-bordered {
@@ -68,7 +69,7 @@ svg {
   font-size: 0.875rem;
   line-height: 1.25rem;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: white;
   outline: none;
   appearance: auto;
@@ -77,13 +78,14 @@ svg {
 
 .select-bordered:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(46, 125, 100, 0.15);
+  box-shadow: 0 0 0 3px rgba(47, 158, 119, 0.15);
 }
 
 .card {
   background: var(--color-card);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   padding: 32px;
 }
 

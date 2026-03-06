@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { PdfViewer, type PdfViewerHandle } from "@/components/pdf-viewer";
 import { InvoiceForm } from "./invoice-form";
-import { ResizableSplit } from "@/components/resizable-split";
 
 type Vendor = { id: string; code: string; name: string; furigana: string | null };
 type Site = { id: string; code: string; name: string };
@@ -109,21 +108,47 @@ export function InvoiceNewClient({ vendors, sites, accounts, organizationId }: P
   }
 
   return (
-    <ResizableSplit
-      initialRatio={0.45}
-      left={<PdfViewer ref={pdfViewerRef} onFileChange={handleFileChange} />}
-      right={
-        <div className="pl-8 py-6 pr-4 h-full overflow-y-auto">
-          <InvoiceForm
-            vendors={vendors}
-            sites={sites}
-            accounts={accounts}
-            pdfFile={pdfFile}
-            organizationId={organizationId}
-            getMarkerImage={getMarkerImage}
-          />
+    <div className="flex gap-7 h-full py-5">
+      {/* 左54%: 請求書ビューア */}
+      <div className="w-[54%] shrink-0">
+        <div className="sticky top-5 h-[calc(100vh-4rem-2.5rem)] bg-card rounded-[20px] border border-border shadow-sm flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+            <span className="text-sm font-semibold text-foreground">請求書ファイル</span>
+            {pdfFile && (
+              <button
+                type="button"
+                onClick={() => {
+                  const url = URL.createObjectURL(pdfFile);
+                  window.open(url, "_blank");
+                }}
+                className="text-xs text-primary hover:text-primary-hover cursor-pointer"
+              >
+                新規ウィンドウで開く
+              </button>
+            )}
+          </div>
+          {pdfFile && (
+            <div className="px-5 py-2 bg-muted border-b border-border">
+              <span className="text-xs text-sub-text truncate block">{pdfFile.name}</span>
+            </div>
+          )}
+          <div className="flex-1 min-h-0">
+            <PdfViewer ref={pdfViewerRef} onFileChange={handleFileChange} />
+          </div>
         </div>
-      }
-    />
+      </div>
+
+      {/* 右46%: フォーム */}
+      <div className="flex-1 min-w-0 overflow-y-auto py-1">
+        <InvoiceForm
+          vendors={vendors}
+          sites={sites}
+          accounts={accounts}
+          pdfFile={pdfFile}
+          organizationId={organizationId}
+          getMarkerImage={getMarkerImage}
+        />
+      </div>
+    </div>
   );
 }

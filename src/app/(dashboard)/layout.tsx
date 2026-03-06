@@ -19,7 +19,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       <header className="h-16 bg-card border-b border-border">
-        <div className="max-w-[1200px] mx-auto px-12 h-full flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-10 h-full flex items-center justify-between">
           <div className="shrink-0">
             <Link href="/invoices/new" className="text-base font-bold text-primary tracking-wide">
               支払請求書登録

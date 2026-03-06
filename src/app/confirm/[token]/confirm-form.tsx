@@ -380,78 +380,74 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 function CompletionScreen() {
   return (
     <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(170deg, #0B3D2E 0%, #145C43 100%)",
+      position: "fixed",
+      inset: 0,
+      background: C.bg,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
-      padding: "40px 24px",
-      position: "relative",
-      overflow: "hidden",
-      margin: "-16px -12px",
+      justifyContent: "flex-start",
+      padding: "0 24px",
+      zIndex: 100,
+      overflowY: "auto",
     }}>
-      {/* 背景の光演出 */}
+      {/* 上部タイトル */}
       <div style={{
-        position: "absolute",
-        top: "18%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 400,
-        height: 400,
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(143,227,191,0.12) 0%, transparent 70%)",
-        pointerEvents: "none",
-      }} />
+        paddingTop: 56,
+        marginBottom: 40,
+        textAlign: "center",
+      }}>
+        <span style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: C.green,
+          letterSpacing: "0.08em",
+        }}>
+          回答完了
+        </span>
+      </div>
 
-      {/* キャラクター SVG */}
-      <div style={{ marginBottom: 32, position: "relative", zIndex: 1 }}>
-        <svg width="180" height="200" viewBox="0 0 180 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* キャラクター（小さめ） */}
+      <div style={{ marginBottom: 28 }}>
+        <svg width="100" height="112" viewBox="0 0 180 200" fill="none" xmlns="http://www.w3.org/2000/svg">
           {/* ヘルメット */}
           <ellipse cx="90" cy="52" rx="42" ry="18" fill="#F5A623" />
           <rect x="48" y="40" width="84" height="24" rx="4" fill="#F5A623" />
           <rect x="54" y="34" width="72" height="12" rx="6" fill="#E8971E" />
           <rect x="60" y="30" width="60" height="8" rx="4" fill="#F5A623" />
-          {/* ヘルメットのライン */}
           <rect x="87" y="30" width="6" height="34" rx="3" fill="#E8971E" opacity="0.5" />
 
           {/* 頭 */}
           <rect x="52" y="60" width="76" height="60" rx="16" fill="#8FE3BF" />
-          {/* 発光感 */}
-          <rect x="52" y="60" width="76" height="60" rx="16" fill="url(#glow)" opacity="0.3" />
+          <rect x="52" y="60" width="76" height="60" rx="16" fill="url(#glowDone)" opacity="0.3" />
           {/* 目 */}
-          <circle cx="74" cy="86" r="8" fill="#0B3D2E" />
-          <circle cx="106" cy="86" r="8" fill="#0B3D2E" />
-          <circle cx="76" cy="84" r="3" fill="#F7FAF8" />
-          <circle cx="108" cy="84" r="3" fill="#F7FAF8" />
+          <circle cx="74" cy="86" r="8" fill="#1F2D29" />
+          <circle cx="106" cy="86" r="8" fill="#1F2D29" />
+          <circle cx="76" cy="84" r="3" fill="#F7FBF9" />
+          <circle cx="108" cy="84" r="3" fill="#F7FBF9" />
           {/* 口 */}
-          <path d="M80 100 Q90 108 100 100" stroke="#0B3D2E" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          <path d="M80 100 Q90 108 100 100" stroke="#1F2D29" strokeWidth="2.5" strokeLinecap="round" fill="none" />
 
           {/* 体 */}
           <rect x="58" y="122" width="64" height="44" rx="12" fill="#8FE3BF" />
-          <rect x="58" y="122" width="64" height="44" rx="12" fill="url(#glow)" opacity="0.2" />
-          {/* 体のライン */}
-          <rect x="82" y="128" width="16" height="4" rx="2" fill="#0B3D2E" opacity="0.15" />
-          <rect x="82" y="136" width="16" height="4" rx="2" fill="#0B3D2E" opacity="0.15" />
+          <rect x="58" y="122" width="64" height="44" rx="12" fill="url(#glowDone)" opacity="0.2" />
+          <rect x="82" y="128" width="16" height="4" rx="2" fill="#1F2D29" opacity="0.12" />
+          <rect x="82" y="136" width="16" height="4" rx="2" fill="#1F2D29" opacity="0.12" />
 
-          {/* 左腕（下ろしている） */}
+          {/* 左腕 */}
           <rect x="36" y="126" width="22" height="14" rx="7" fill="#8FE3BF" />
-
-          {/* 右腕（手を上げている） */}
+          {/* 右腕（手を上げ） */}
           <g transform="rotate(-30, 140, 120)">
             <rect x="122" y="112" width="28" height="14" rx="7" fill="#8FE3BF" />
           </g>
-          {/* 右手 */}
           <circle cx="148" cy="98" r="9" fill="#8FE3BF" />
-          <circle cx="148" cy="98" r="9" fill="url(#glow)" opacity="0.3" />
 
           {/* 足 */}
           <rect x="68" y="166" width="18" height="18" rx="6" fill="#6DCAA3" />
           <rect x="94" y="166" width="18" height="18" rx="6" fill="#6DCAA3" />
 
-          {/* グラデーション定義 */}
           <defs>
-            <radialGradient id="glow" cx="50%" cy="30%" r="60%">
+            <radialGradient id="glowDone" cx="50%" cy="30%" r="60%">
               <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.6" />
               <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
             </radialGradient>
@@ -461,38 +457,32 @@ function CompletionScreen() {
 
       {/* メインメッセージ */}
       <h2 style={{
-        color: "#F7FAF8",
-        fontSize: 24,
+        color: C.text,
+        fontSize: 22,
         fontWeight: 700,
         textAlign: "center",
-        margin: "0 0 12px",
+        margin: "0 0 16px",
         lineHeight: 1.4,
-        position: "relative",
-        zIndex: 1,
       }}>
-        ご回答ありがとうございました！
+        ご回答ありがとうございました
       </h2>
 
       {/* サブメッセージ */}
       <p style={{
-        color: "#D7E7DE",
+        color: C.sub,
         fontSize: 15,
         textAlign: "center",
-        margin: "0 0 4px",
+        margin: "0 0 6px",
         lineHeight: 1.6,
-        position: "relative",
-        zIndex: 1,
       }}>
         現場の回答を受け付けました
       </p>
       <p style={{
-        color: "#D7E7DE",
+        color: C.sub,
         fontSize: 14,
         textAlign: "center",
-        margin: "0 0 36px",
+        margin: "0 0 52px",
         lineHeight: 1.6,
-        position: "relative",
-        zIndex: 1,
       }}>
         この画面は閉じて大丈夫です
       </p>
@@ -504,17 +494,17 @@ function CompletionScreen() {
           try { window.close(); } catch { history.back(); }
         }}
         style={{
-          padding: "14px 48px",
-          borderRadius: 12,
-          border: "2px solid rgba(143,227,191,0.5)",
-          background: "rgba(143,227,191,0.1)",
-          color: "#F7FAF8",
+          padding: "16px 48px",
+          borderRadius: 14,
+          border: "none",
+          background: C.green,
+          color: C.white,
           fontSize: 16,
           fontWeight: 600,
           cursor: "pointer",
-          position: "relative",
-          zIndex: 1,
+          boxShadow: "0 2px 8px rgba(47,158,119,0.25)",
           transition: "background 0.2s ease",
+          minWidth: 200,
         }}
       >
         閉じる
