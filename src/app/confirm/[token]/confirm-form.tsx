@@ -107,7 +107,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   };
 
   return (
-    <div className={showStickyButton ? "pb-24" : ""}>
+    <div className={showStickyButton ? "pb-24" : ""} style={{ overscrollBehavior: 'none' }}>
       {/* 請求書情報 */}
       <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-4 mb-3">
         <div className="space-y-2 text-base">
