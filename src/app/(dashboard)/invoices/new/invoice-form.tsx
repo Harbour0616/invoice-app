@@ -438,7 +438,7 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
           <div className="w-[90px] text-xs text-sub-text font-semibold text-center">税率</div>
           <div className="min-w-[110px] flex-1 text-xs text-sub-text font-semibold uppercase tracking-wider text-right">消費税額</div>
           <div className="min-w-[120px] flex-1 text-xs text-sub-text font-semibold uppercase tracking-wider text-right">税込金額</div>
-          <div style={{ minWidth: '36px' }}></div>
+          <div style={{ position: 'sticky', right: 0, minWidth: '36px', background: 'var(--color-card)', zIndex: 1 }}></div>
         </div>
 
         <div className="px-6 pb-6">
@@ -535,7 +535,7 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
                   ? formatNumber(line.amount_incl_tax)
                   : "—"}
               </div>
-              <div style={{ minWidth: '36px', flexShrink: 0 }}>
+              <div style={{ position: 'sticky', right: 0, minWidth: '36px', flexShrink: 0, background: 'var(--color-card)', zIndex: 1 }}>
                 <button
                   type="button"
                   onClick={() => removeLine(line.key)}
