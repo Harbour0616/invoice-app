@@ -433,29 +433,31 @@ function ZoomableViewer({ src, isImage }: { src: string; isImage: boolean }) {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        overflow: "hidden",
-        touchAction: "none",
-        userSelect: "none",
-        cursor: "grab",
-      }}
-    >
-      <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
-        {isImage ? (
-          <img
-            src={src}
-            style={{ width: "100%", height: "auto", display: "block" }}
-            alt=""
-            draggable={false}
-          />
-        ) : (
-          <iframe
-            src={src}
-            style={{ width: "100%", height: "500px", border: "none", pointerEvents: "none" }}
-          />
-        )}
+    <div style={{ overflow: "hidden", position: "relative" }}>
+      <div
+        ref={containerRef}
+        style={{
+          overflow: "visible",
+          touchAction: "none",
+          userSelect: "none",
+          cursor: "grab",
+        }}
+      >
+        <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
+          {isImage ? (
+            <img
+              src={src}
+              style={{ width: "100%", height: "auto", display: "block" }}
+              alt=""
+              draggable={false}
+            />
+          ) : (
+            <iframe
+              src={src}
+              style={{ width: "100%", height: "500px", border: "none", pointerEvents: "none" }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
