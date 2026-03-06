@@ -109,7 +109,7 @@ export function ResizableSplit({
       >
         <div className="w-px bg-border group-hover:bg-primary/40 group-active:bg-primary/40" />
       </div>
-      <div style={{ width: rightPercent }} className="min-w-0 h-full overflow-hidden">
+      <div style={{ width: rightPercent }} className="min-w-0 h-full overflow-y-auto overflow-x-hidden">
         {right}
       </div>
     </div>

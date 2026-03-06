@@ -427,7 +427,7 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
       </div>
 
       {/* 明細行 */}
-      <div className="card mb-6 !p-0">
+      <div className="card mb-6 !p-0 overflow-x-auto">
         {/* 明細行ヘッダーラベル */}
         <div className="hidden md:flex items-end gap-4 px-6 pt-6 pb-2">
           <div className="min-w-[200px] flex-[2] text-xs text-sub-text font-semibold uppercase tracking-wider">現場名 *</div>
