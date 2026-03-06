@@ -133,26 +133,6 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
         )}
       </div>
 
-      {/* PDF/画像表示 — 画面幅いっぱい、ピンチズーム可能 */}
-      {signedFileUrl && (
-        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3" onTouchStart={() => {}}>
-          <div className="px-4 py-2 border-b border-border">
-            <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
-          </div>
-          {isImagePath(invoice.pdf_file_path) ? (
-            <div style={{ position: 'relative' }}>
-              <img src={signedFileUrl} style={{ width: '100%', height: 'auto', display: 'block' }} alt="" />
-              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
-            </div>
-          ) : (
-            <div style={{ position: 'relative' }}>
-              <iframe src={signedFileUrl} style={{ width: '100%', height: '500px', border: 'none' }} />
-              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ステータスメッセージ */}
       {(isCompleted || submitted) && (
         <div className="mb-3 p-4 bg-green-50 text-green-700 rounded-[10px] text-base font-medium text-center">
@@ -292,6 +272,26 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
             ))}
           </div>
         </details>
+      )}
+
+      {/* PDF/画像表示 */}
+      {signedFileUrl && (
+        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3" onTouchStart={() => {}}>
+          <div className="px-4 py-2 border-b border-border">
+            <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
+          </div>
+          {isImagePath(invoice.pdf_file_path) ? (
+            <div style={{ position: 'relative' }}>
+              <img src={signedFileUrl} style={{ width: '100%', height: 'auto', display: 'block' }} alt="" />
+              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <iframe src={signedFileUrl} style={{ width: '100%', height: '500px', border: 'none' }} />
+              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
+            </div>
+          )}
+        </div>
       )}
 
       {/* Sticky 回答ボタン */}
