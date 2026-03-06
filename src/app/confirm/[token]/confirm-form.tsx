@@ -462,7 +462,7 @@ function AttachmentViewer({
           <iframe
             src={src}
             style={{
-              width: "100%",
+              width: "250%",
               height: "80vh",
               minHeight: "500px",
               border: "none",
