@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { submitConfirmation } from "./actions";
 
 type Site = { id: string; code: string; name: string };
@@ -282,110 +282,61 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 
 function ZoomableViewer({ src, isImage }: { src: string; isImage: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // All mutable gesture state in a single ref to avoid stale closures
   const g = useRef({
     scale: 1,
-    tx: 0,
-    ty: 0,
-    isDragging: false,
-    isPinching: false,
-    lastX: 0,
-    lastY: 0,
     pinchDist0: 0,
     pinchScale0: 1,
-    pinchMidX0: 0,
-    pinchMidY0: 0,
-    pinchTx0: 0,
-    pinchTy0: 0,
     lastTapTime: 0,
-    animating: false,
+    isPinching: false,
   });
-
-  const apply = useCallback((animate = false) => {
-    const el = contentRef.current;
-    if (!el) return;
-    const { scale, tx, ty } = g.current;
-    el.style.transition = animate ? "transform 0.25s ease" : "none";
-    el.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-    g.current.animating = animate;
-  }, []);
-
-  const clamp = useCallback(() => {
-    const st = g.current;
-    const el = containerRef.current;
-    if (!el || st.scale <= 1) {
-      st.tx = 0;
-      st.ty = 0;
-      return;
-    }
-    const w = el.clientWidth;
-    const h = el.clientHeight;
-    const maxX = (w * (st.scale - 1)) / 2;
-    const maxY = (h * (st.scale - 1)) / 2;
-    st.tx = Math.max(-maxX, Math.min(maxX, st.tx));
-    st.ty = Math.max(-maxY, Math.min(maxY, st.ty));
-  }, []);
-
-  const reset = useCallback(() => {
-    const st = g.current;
-    st.scale = 1;
-    st.tx = 0;
-    st.ty = 0;
-    apply(true);
-  }, [apply]);
-
-  const dist = (a: Touch, b: Touch) => {
-    const dx = a.clientX - b.clientX;
-    const dy = a.clientY - b.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    const wrapper = wrapperRef.current;
+    if (!el || !wrapper) return;
+
+    const setScale = (s: number) => {
+      g.current.scale = s;
+      wrapper.style.width = `${s * 100}%`;
+      el.style.touchAction = s > 1 ? "none" : "pan-x pan-y";
+    };
+
+    const touchDist = (a: Touch, b: Touch) =>
+      Math.sqrt((a.clientX - b.clientX) ** 2 + (a.clientY - b.clientY) ** 2);
+
+    let lastX = 0;
+    let lastY = 0;
+    let isDragging = false;
 
     const onTouchStart = (e: TouchEvent) => {
       const st = g.current;
       if (e.touches.length === 2) {
         e.preventDefault();
         st.isPinching = true;
-        st.isDragging = false;
-        st.pinchDist0 = dist(e.touches[0], e.touches[1]);
+        isDragging = false;
+        st.pinchDist0 = touchDist(e.touches[0], e.touches[1]);
         st.pinchScale0 = st.scale;
-        st.pinchTx0 = st.tx;
-        st.pinchTy0 = st.ty;
-        const rect = el.getBoundingClientRect();
-        st.pinchMidX0 = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left - rect.width / 2;
-        st.pinchMidY0 = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top - rect.height / 2;
       } else if (e.touches.length === 1) {
         // Double-tap detection
         const now = Date.now();
         if (now - st.lastTapTime < 300) {
           e.preventDefault();
-          if (st.scale > 1) {
-            reset();
-          } else {
-            st.scale = 2.5;
-            // Zoom toward tap point
-            const rect = el.getBoundingClientRect();
-            const tapX = e.touches[0].clientX - rect.left - rect.width / 2;
-            const tapY = e.touches[0].clientY - rect.top - rect.height / 2;
-            st.tx = -tapX * (st.scale - 1);
-            st.ty = -tapY * (st.scale - 1);
-            clamp();
-            apply(true);
-          }
+          setScale(1);
+          el.scrollTo({ left: 0, top: 0, behavior: "smooth" });
           st.lastTapTime = 0;
           return;
         }
         st.lastTapTime = now;
 
-        e.preventDefault();
-        st.isDragging = true;
-        st.lastX = e.touches[0].clientX;
-        st.lastY = e.touches[0].clientY;
+        if (st.scale > 1) {
+          e.preventDefault();
+          isDragging = true;
+          lastX = e.touches[0].clientX;
+          lastY = e.touches[0].clientY;
+        }
+        // scale=1: don't preventDefault → native scroll works
       }
     };
 
@@ -393,112 +344,65 @@ function ZoomableViewer({ src, isImage }: { src: string; isImage: boolean }) {
       const st = g.current;
       if (st.isPinching && e.touches.length === 2) {
         e.preventDefault();
-        const d = dist(e.touches[0], e.touches[1]);
-        const ratio = d / st.pinchDist0;
-        st.scale = Math.max(1, Math.min(5, st.pinchScale0 * ratio));
-        // Keep pinch midpoint stable
-        st.tx = st.pinchTx0 * (st.scale / st.pinchScale0);
-        st.ty = st.pinchTy0 * (st.scale / st.pinchScale0);
-        clamp();
-        apply();
-      } else if (st.isDragging && e.touches.length === 1) {
+        const d = touchDist(e.touches[0], e.touches[1]);
+        const newScale = Math.max(1, Math.min(5, st.pinchScale0 * (d / st.pinchDist0)));
+        setScale(newScale);
+      } else if (isDragging && e.touches.length === 1 && st.scale > 1) {
         e.preventDefault();
-        if (st.scale > 1) {
-          const dx = e.touches[0].clientX - st.lastX;
-          const dy = e.touches[0].clientY - st.lastY;
-          st.tx += dx;
-          st.ty += dy;
-          clamp();
-          apply();
-        }
-        st.lastX = e.touches[0].clientX;
-        st.lastY = e.touches[0].clientY;
+        el.scrollLeft -= e.touches[0].clientX - lastX;
+        el.scrollTop -= e.touches[0].clientY - lastY;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
       }
     };
 
     const onTouchEnd = (e: TouchEvent) => {
       const st = g.current;
       if (e.touches.length < 2) st.isPinching = false;
-      if (e.touches.length === 0) st.isDragging = false;
-      // Snap back if scale is near 1
-      if (e.touches.length === 0 && st.scale < 1.05) {
-        reset();
+      if (e.touches.length === 0) {
+        isDragging = false;
+        if (st.scale < 1.05) setScale(1);
       }
     };
 
-    // Mouse: drag
-    const onMouseDown = (e: MouseEvent) => {
-      const st = g.current;
-      if (st.scale <= 1) return;
-      e.preventDefault();
-      st.isDragging = true;
-      st.lastX = e.clientX;
-      st.lastY = e.clientY;
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      const st = g.current;
-      if (!st.isDragging) return;
-      e.preventDefault();
-      st.tx += e.clientX - st.lastX;
-      st.ty += e.clientY - st.lastY;
-      st.lastX = e.clientX;
-      st.lastY = e.clientY;
-      clamp();
-      apply();
-    };
-
-    const onMouseUp = () => {
-      g.current.isDragging = false;
-    };
-
-    // Mouse: wheel zoom
+    // PC: Ctrl+wheel zoom
     const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
       e.preventDefault();
       const st = g.current;
       const factor = e.deltaY > 0 ? 0.9 : 1.1;
-      st.scale = Math.max(1, Math.min(5, st.scale * factor));
-      clamp();
-      apply();
+      setScale(Math.max(1, Math.min(5, st.scale * factor)));
     };
 
     el.addEventListener("touchstart", onTouchStart, { passive: false });
     el.addEventListener("touchmove", onTouchMove, { passive: false });
     el.addEventListener("touchend", onTouchEnd);
-    el.addEventListener("mousedown", onMouseDown);
-    el.addEventListener("mousemove", onMouseMove);
-    el.addEventListener("mouseup", onMouseUp);
-    el.addEventListener("mouseleave", onMouseUp);
     el.addEventListener("wheel", onWheel, { passive: false });
 
     return () => {
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
-      el.removeEventListener("mousedown", onMouseDown);
-      el.removeEventListener("mousemove", onMouseMove);
-      el.removeEventListener("mouseup", onMouseUp);
-      el.removeEventListener("mouseleave", onMouseUp);
       el.removeEventListener("wheel", onWheel);
     };
-  }, [apply, clamp, reset]);
+  }, []);
 
   return (
     <div
       ref={containerRef}
       style={{
-        overflow: "hidden",
-        touchAction: "none",
-        cursor: "grab",
-        position: "relative",
+        overflow: "scroll",
+        scrollbarWidth: "none",
+        touchAction: "pan-x pan-y",
         userSelect: "none",
+        WebkitOverflowScrolling: "touch",
       }}
     >
-      <div ref={contentRef} style={{ transformOrigin: "center center" }}>
+      <div ref={wrapperRef} style={{ width: "100%" }}>
         {isImage ? (
           <img
             src={src}
-            style={{ width: "100%", height: "auto", display: "block" }}
+            style={{ width: "100%", minWidth: "100%", height: "auto", display: "block" }}
             alt=""
             draggable={false}
           />
