@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { submitConfirmation } from "./actions";
 
 type Site = { id: string; code: string; name: string };
@@ -246,21 +246,14 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 
       {/* PDF/画像表示 */}
       {signedFileUrl && (
-        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3" onTouchStart={() => {}}>
-          <div className="px-4 py-2 border-b border-border">
+        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3 overflow-hidden">
+          <div className="px-4 py-2 border-b border-border flex items-center justify-between">
             <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
           </div>
-          {isImagePath(invoice.pdf_file_path) ? (
-            <div style={{ position: 'relative' }}>
-              <img src={signedFileUrl} style={{ width: '100%', height: 'auto', display: 'block' }} alt="" />
-              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
-            </div>
-          ) : (
-            <div style={{ position: 'relative' }}>
-              <iframe src={signedFileUrl} style={{ width: '100%', height: '500px', border: 'none' }} />
-              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
-            </div>
-          )}
+          <ZoomableViewer
+            src={signedFileUrl}
+            isImage={isImagePath(invoice.pdf_file_path)}
+          />
         </div>
       )}
 
@@ -283,6 +276,239 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ZoomableViewer({ src, isImage }: { src: string; isImage: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // All mutable gesture state in a single ref to avoid stale closures
+  const g = useRef({
+    scale: 1,
+    tx: 0,
+    ty: 0,
+    isDragging: false,
+    isPinching: false,
+    lastX: 0,
+    lastY: 0,
+    pinchDist0: 0,
+    pinchScale0: 1,
+    pinchMidX0: 0,
+    pinchMidY0: 0,
+    pinchTx0: 0,
+    pinchTy0: 0,
+    lastTapTime: 0,
+    animating: false,
+  });
+
+  const apply = useCallback((animate = false) => {
+    const el = contentRef.current;
+    if (!el) return;
+    const { scale, tx, ty } = g.current;
+    el.style.transition = animate ? "transform 0.25s ease" : "none";
+    el.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    g.current.animating = animate;
+  }, []);
+
+  const clamp = useCallback(() => {
+    const st = g.current;
+    const el = containerRef.current;
+    if (!el || st.scale <= 1) {
+      st.tx = 0;
+      st.ty = 0;
+      return;
+    }
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const maxX = (w * (st.scale - 1)) / 2;
+    const maxY = (h * (st.scale - 1)) / 2;
+    st.tx = Math.max(-maxX, Math.min(maxX, st.tx));
+    st.ty = Math.max(-maxY, Math.min(maxY, st.ty));
+  }, []);
+
+  const reset = useCallback(() => {
+    const st = g.current;
+    st.scale = 1;
+    st.tx = 0;
+    st.ty = 0;
+    apply(true);
+  }, [apply]);
+
+  const dist = (a: Touch, b: Touch) => {
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      const st = g.current;
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        st.isPinching = true;
+        st.isDragging = false;
+        st.pinchDist0 = dist(e.touches[0], e.touches[1]);
+        st.pinchScale0 = st.scale;
+        st.pinchTx0 = st.tx;
+        st.pinchTy0 = st.ty;
+        const rect = el.getBoundingClientRect();
+        st.pinchMidX0 = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left - rect.width / 2;
+        st.pinchMidY0 = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top - rect.height / 2;
+      } else if (e.touches.length === 1) {
+        // Double-tap detection
+        const now = Date.now();
+        if (now - st.lastTapTime < 300) {
+          e.preventDefault();
+          if (st.scale > 1) {
+            reset();
+          } else {
+            st.scale = 2.5;
+            // Zoom toward tap point
+            const rect = el.getBoundingClientRect();
+            const tapX = e.touches[0].clientX - rect.left - rect.width / 2;
+            const tapY = e.touches[0].clientY - rect.top - rect.height / 2;
+            st.tx = -tapX * (st.scale - 1);
+            st.ty = -tapY * (st.scale - 1);
+            clamp();
+            apply(true);
+          }
+          st.lastTapTime = 0;
+          return;
+        }
+        st.lastTapTime = now;
+
+        e.preventDefault();
+        st.isDragging = true;
+        st.lastX = e.touches[0].clientX;
+        st.lastY = e.touches[0].clientY;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const st = g.current;
+      if (st.isPinching && e.touches.length === 2) {
+        e.preventDefault();
+        const d = dist(e.touches[0], e.touches[1]);
+        const ratio = d / st.pinchDist0;
+        st.scale = Math.max(1, Math.min(5, st.pinchScale0 * ratio));
+        // Keep pinch midpoint stable
+        st.tx = st.pinchTx0 * (st.scale / st.pinchScale0);
+        st.ty = st.pinchTy0 * (st.scale / st.pinchScale0);
+        clamp();
+        apply();
+      } else if (st.isDragging && e.touches.length === 1) {
+        e.preventDefault();
+        if (st.scale > 1) {
+          const dx = e.touches[0].clientX - st.lastX;
+          const dy = e.touches[0].clientY - st.lastY;
+          st.tx += dx;
+          st.ty += dy;
+          clamp();
+          apply();
+        }
+        st.lastX = e.touches[0].clientX;
+        st.lastY = e.touches[0].clientY;
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const st = g.current;
+      if (e.touches.length < 2) st.isPinching = false;
+      if (e.touches.length === 0) st.isDragging = false;
+      // Snap back if scale is near 1
+      if (e.touches.length === 0 && st.scale < 1.05) {
+        reset();
+      }
+    };
+
+    // Mouse: drag
+    const onMouseDown = (e: MouseEvent) => {
+      const st = g.current;
+      if (st.scale <= 1) return;
+      e.preventDefault();
+      st.isDragging = true;
+      st.lastX = e.clientX;
+      st.lastY = e.clientY;
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      const st = g.current;
+      if (!st.isDragging) return;
+      e.preventDefault();
+      st.tx += e.clientX - st.lastX;
+      st.ty += e.clientY - st.lastY;
+      st.lastX = e.clientX;
+      st.lastY = e.clientY;
+      clamp();
+      apply();
+    };
+
+    const onMouseUp = () => {
+      g.current.isDragging = false;
+    };
+
+    // Mouse: wheel zoom
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const st = g.current;
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      st.scale = Math.max(1, Math.min(5, st.scale * factor));
+      clamp();
+      apply();
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("mousedown", onMouseDown);
+    el.addEventListener("mousemove", onMouseMove);
+    el.addEventListener("mouseup", onMouseUp);
+    el.addEventListener("mouseleave", onMouseUp);
+    el.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("mousedown", onMouseDown);
+      el.removeEventListener("mousemove", onMouseMove);
+      el.removeEventListener("mouseup", onMouseUp);
+      el.removeEventListener("mouseleave", onMouseUp);
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, [apply, clamp, reset]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        overflow: "hidden",
+        touchAction: "none",
+        cursor: "grab",
+        position: "relative",
+        userSelect: "none",
+      }}
+    >
+      <div ref={contentRef} style={{ transformOrigin: "center center" }}>
+        {isImage ? (
+          <img
+            src={src}
+            style={{ width: "100%", height: "auto", display: "block" }}
+            alt=""
+            draggable={false}
+          />
+        ) : (
+          <iframe
+            src={src}
+            style={{ width: "100%", height: "500px", border: "none", pointerEvents: "none" }}
+          />
+        )}
+      </div>
     </div>
   );
 }
