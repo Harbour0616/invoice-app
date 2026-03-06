@@ -467,27 +467,108 @@ function AttachmentViewer({
 }
 
 function PdfViewer({ src, maxHeight }: { src: string; maxHeight: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const g = useRef({
+    scale: 1,
+    isPinching: false,
+    pinchDist0: 0,
+    pinchScale0: 1,
+    lastTapTime: 0,
+  });
+
+  const applyScale = (animate = false) => {
+    const el = contentRef.current;
+    if (!el) return;
+    const { scale } = g.current;
+    el.style.transition = animate ? "transform 0.25s ease" : "none";
+    el.style.transform = `scale(${scale})`;
+  };
+
+  const resetScale = () => {
+    g.current.scale = 1;
+    applyScale(true);
+  };
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const dist = (a: Touch, b: Touch) =>
+      Math.sqrt((a.clientX - b.clientX) ** 2 + (a.clientY - b.clientY) ** 2);
+
+    const onTouchStart = (e: TouchEvent) => {
+      const st = g.current;
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        st.isPinching = true;
+        st.pinchDist0 = dist(e.touches[0], e.touches[1]);
+        st.pinchScale0 = st.scale;
+      } else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - st.lastTapTime < 300) {
+          e.preventDefault();
+          resetScale();
+          st.lastTapTime = 0;
+          return;
+        }
+        st.lastTapTime = now;
+        // 1本指はネイティブスクロールに任せる（preventDefaultしない）
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const st = g.current;
+      if (st.isPinching && e.touches.length === 2) {
+        e.preventDefault();
+        const d = dist(e.touches[0], e.touches[1]);
+        st.scale = Math.max(0.5, Math.min(5, st.pinchScale0 * (d / st.pinchDist0)));
+        applyScale();
+      }
+      // 1本指はネイティブスクロールに任せる
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) g.current.isPinching = false;
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+
   return (
     <div
+      ref={containerRef}
       style={{
         overflowY: "auto",
         overflowX: "hidden",
         WebkitOverflowScrolling: "touch",
-        touchAction: "pan-y",
+        touchAction: "pan-y pinch-zoom",
         maxHeight,
         padding: "8px",
       }}
     >
-      <iframe
-        src={src}
-        style={{
-          width: "100%",
-          height: "80vh",
-          minHeight: "500px",
-          border: "none",
-          display: "block",
-        }}
-      />
+      <div ref={contentRef} style={{ transformOrigin: "center top" }}>
+        <iframe
+          src={src}
+          style={{
+            width: "100%",
+            height: "80vh",
+            minHeight: "500px",
+            border: "none",
+            display: "block",
+            pointerEvents: "none",
+          }}
+        />
+      </div>
     </div>
   );
 }
