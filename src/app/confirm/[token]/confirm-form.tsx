@@ -142,53 +142,22 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           {isImagePath(invoice.pdf_file_path) ? (
             <div
               style={{
-                maxHeight: '80dvh',
-                overflowY: 'auto',
-                WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-y',
+                backgroundImage: signedMarkerUrl
+                  ? `url("${signedMarkerUrl}"), url("${signedFileUrl}")`
+                  : `url("${signedFileUrl}")`,
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
+                width: '100%',
+                aspectRatio: '100 / 141',
               }}
-            >
-              <div
-                style={{
-                  backgroundImage: signedMarkerUrl
-                    ? `url("${signedMarkerUrl}"), url("${signedFileUrl}")`
-                    : `url("${signedFileUrl}")`,
-                  backgroundSize: 'contain',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'center',
-                  width: '100%',
-                  paddingBottom: '141%',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none',
-                  WebkitTouchCallout: 'none',
-                }}
-              />
-            </div>
+            />
           ) : (
-            <div
-              className="relative w-full"
-              style={{
-                maxHeight: '80dvh',
-                overflowY: 'auto',
-                WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-y',
-              }}
-            >
-              <iframe
-                src={signedFileUrl}
-                className="w-full h-[60vh] sm:h-[500px]"
-                title="請求書PDF"
-              />
-              {signedMarkerUrl && (
-                <img
-                  src={signedMarkerUrl}
-                  alt=""
-                  className="absolute inset-0 w-full h-full pointer-events-none"
-                  draggable={false}
-                  style={{ touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' }}
-                />
-              )}
-            </div>
+            <iframe
+              src={signedFileUrl}
+              className="w-full h-[60vh] sm:h-[500px]"
+              title="請求書PDF"
+            />
           )}
         </div>
       )}
