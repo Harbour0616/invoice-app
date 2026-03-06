@@ -250,11 +250,17 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           <div className="px-4 py-2 border-b border-border flex items-center justify-between">
             <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
           </div>
-          <AttachmentViewer
-            src={signedFileUrl}
-            isImage={isImagePath(invoice.pdf_file_path)}
-            maxHeight={showStickyButton ? "calc(100vh - 200px)" : "calc(100vh - 120px)"}
-          />
+          {isImagePath(invoice.pdf_file_path) ? (
+            <AttachmentViewer
+              src={signedFileUrl}
+              maxHeight={showStickyButton ? "calc(100vh - 200px)" : "calc(100vh - 120px)"}
+            />
+          ) : (
+            <PdfViewer
+              src={signedFileUrl}
+              maxHeight={showStickyButton ? "calc(100vh - 200px)" : "calc(100vh - 120px)"}
+            />
+          )}
         </div>
       )}
 
@@ -283,11 +289,9 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 
 function AttachmentViewer({
   src,
-  isImage,
   maxHeight,
 }: {
   src: string;
-  isImage: boolean;
   maxHeight: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -451,27 +455,39 @@ function AttachmentViewer({
       }}
     >
       <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
-        {isImage ? (
-          <img
-            src={src}
-            style={{ width: "100%", height: "auto", display: "block" }}
-            alt="添付ファイル"
-            draggable={false}
-          />
-        ) : (
-          <iframe
-            src={src}
-            style={{
-              width: "100%",
-              height: "80vh",
-              minHeight: "500px",
-              border: "none",
-              display: "block",
-              pointerEvents: "none",
-            }}
-          />
-        )}
+        <img
+          src={src}
+          style={{ width: "100%", height: "auto", display: "block" }}
+          alt="添付ファイル"
+          draggable={false}
+        />
       </div>
+    </div>
+  );
+}
+
+function PdfViewer({ src, maxHeight }: { src: string; maxHeight: string }) {
+  return (
+    <div
+      style={{
+        overflowY: "auto",
+        overflowX: "hidden",
+        WebkitOverflowScrolling: "touch",
+        touchAction: "pan-y",
+        maxHeight,
+        padding: "8px",
+      }}
+    >
+      <iframe
+        src={src}
+        style={{
+          width: "100%",
+          height: "80vh",
+          minHeight: "500px",
+          border: "none",
+          display: "block",
+        }}
+      />
     </div>
   );
 }
