@@ -151,14 +151,17 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 
       {/* ヘッダー */}
       {!isDone && (
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: 0, lineHeight: 1.4 }}>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 4, letterSpacing: "0.04em" }}>
+            現場確認
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: "0 0 6px", lineHeight: 1.3 }}>
             この費用はどの現場ですか？
           </h2>
-          <p style={{ fontSize: 15, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: C.sub, margin: 0, lineHeight: 1.5 }}>
             1件選ぶだけで完了します
           </p>
-          <p style={{ fontSize: 13, color: C.sub, margin: "4px 0 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 13, color: C.sub, margin: "2px 0 0", lineHeight: 1.5 }}>
             迷った場合は下の請求書をご確認ください
           </p>
         </div>
@@ -262,14 +265,15 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                           background: isSelected ? C.mint : C.white,
                           cursor: "pointer",
                           textAlign: "left",
-                          transition: "all 0.15s ease",
+                          transition: "background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
+                          boxShadow: isSelected ? `0 0 0 1px ${C.green}` : "none",
                         }}
                       >
                         <span style={{
                           width: 22,
                           height: 22,
                           borderRadius: "50%",
-                          border: `2px solid ${isSelected ? C.green : C.border}`,
+                          border: `2px solid ${isSelected ? C.green : "#C4CCC8"}`,
                           background: isSelected ? C.green : "transparent",
                           display: "flex",
                           alignItems: "center",
@@ -278,11 +282,12 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                           color: C.white,
                           fontSize: 13,
                           fontWeight: 700,
+                          transition: "background 0.2s ease, border-color 0.2s ease",
                         }}>
                           {isSelected && "\u2713"}
                         </span>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 500, color: C.text }}>{s.name}</div>
+                          <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 500, color: C.text, transition: "font-weight 0.2s ease" }}>{s.name}</div>
                           <div style={{ fontSize: 13, color: C.sub }}>{s.code}</div>
                         </div>
                       </button>
@@ -321,9 +326,9 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
               color: C.text,
             }}
           >
-            <span>請求書を確認する</span>
+            <span>{attachmentOpen ? "請求書を閉じる" : "請求書を確認する"}</span>
             <span style={{
-              fontSize: 12,
+              fontSize: 11,
               color: C.sub,
               transition: "transform 0.2s ease",
               transform: attachmentOpen ? "rotate(180deg)" : "rotate(0deg)",
@@ -370,9 +375,10 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                 fontSize: 17,
                 fontWeight: 700,
                 cursor: allAnswered ? "pointer" : "default",
-                background: allAnswered ? C.green : C.border,
-                color: allAnswered ? C.white : C.sub,
-                transition: "all 0.2s ease",
+                background: allAnswered ? C.green : "#E9EEEC",
+                color: allAnswered ? C.white : "#A7B3AF",
+                boxShadow: allAnswered ? "0 2px 8px rgba(47,158,119,0.3)" : "none",
+                transition: "background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
                 opacity: loading ? 0.6 : 1,
               }}
             >
