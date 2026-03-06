@@ -315,7 +315,7 @@ function InvoiceRow({
   const getPendingUrl = () => {
     if (confirmUrl) return confirmUrl;
     if (pendingRequest) {
-      return `${window.location.origin}/confirm/${pendingRequest.token}`;
+      return `https://invoice-app-chi-three.vercel.app/confirm/${pendingRequest.token}`;
     }
     return null;
   };

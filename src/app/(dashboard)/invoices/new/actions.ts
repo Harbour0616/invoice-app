@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getOrganization } from "@/lib/get-organization";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 
 export async function getMasterData() {
   const { organizationId } = await getOrganization();
@@ -142,10 +141,7 @@ export async function createConfirmationRequest(invoiceId: string, markerFilePat
     .single();
 
   if (existing) {
-    const h = await headers();
-    const host = h.get("host") || "localhost:3000";
-    const protocol = h.get("x-forwarded-proto") || "http";
-    return { error: null, url: `${protocol}://${host}/confirm/${existing.token}` };
+    return { error: null, url: `https://invoice-app-chi-three.vercel.app/confirm/${existing.token}` };
   }
 
   // 新規作成
@@ -159,8 +155,5 @@ export async function createConfirmationRequest(invoiceId: string, markerFilePat
     return { error: error.message };
   }
 
-  const h = await headers();
-  const host = h.get("host") || "localhost:3000";
-  const protocol = h.get("x-forwarded-proto") || "http";
-  return { error: null, url: `${protocol}://${host}/confirm/${req.token}` };
+  return { error: null, url: `https://invoice-app-chi-three.vercel.app/confirm/${req.token}` };
 }
