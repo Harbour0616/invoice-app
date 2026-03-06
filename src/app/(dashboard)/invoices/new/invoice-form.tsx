@@ -535,15 +535,17 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
                   ? formatNumber(line.amount_incl_tax)
                   : "—"}
               </div>
-              {lines.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeLine(line.key)}
-                  style={{ minWidth: '36px', minHeight: '36px', color: 'red', fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  ×
-                </button>
-              )}
+              <div style={{ minWidth: '36px', flexShrink: 0 }}>
+                {lines.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeLine(line.key)}
+                    style={{ minWidth: '36px', minHeight: '36px', color: 'red', fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
           ))}
 
