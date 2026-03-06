@@ -30,7 +30,7 @@ export default async function ConfirmPage({ params }: Props) {
       total_excl_tax, total_tax, total_incl_tax, organization_id,
       vendor:vendors(id, code, name),
       invoice_lines(
-        id, site_id, amount_excl_tax, tax_rate, tax_amount, amount_incl_tax, line_order,
+        id, site_id, description, amount_excl_tax, tax_rate, tax_amount, amount_incl_tax, line_order,
         site:sites(id, code, name),
         account:accounts(id, code, name)
       )

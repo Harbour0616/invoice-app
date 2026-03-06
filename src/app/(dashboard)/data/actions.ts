@@ -36,11 +36,57 @@ export type InvoiceWithDetails = {
   }[];
 };
 
-export async function getInvoices() {
+export async function getDisplayMonths(): Promise<number> {
   const { organizationId } = await getOrganization();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("organization_id", organizationId)
+    .eq("key", "invoice_display_months")
+    .single();
+
+  if (data) {
+    const n = parseInt(data.value, 10);
+    if (n >= 1 && n <= 6) return n;
+  }
+  return 1;
+}
+
+export async function updateDisplayMonths(months: number) {
+  const { organizationId, role } = await getOrganization();
+  if (role !== "owner") {
+    return { error: "権限がありません" };
+  }
+  if (months < 1 || months > 6) {
+    return { error: "1〜6の範囲で指定してください" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .upsert(
+      {
+        organization_id: organizationId,
+        key: "invoice_display_months",
+        value: String(months),
+      },
+      { onConflict: "organization_id,key" }
+    );
+
+  if (error) return { error: error.message };
+
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/data");
+  return { error: null };
+}
+
+export async function getInvoices(dateFrom?: string, dateTo?: string) {
+  const { organizationId } = await getOrganization();
+  const supabase = await createClient();
+
+  let query = supabase
     .from("invoices")
     .select(
       `
@@ -56,7 +102,16 @@ export async function getInvoices() {
       confirmation_requests(id, token, status)
     `
     )
-    .eq("organization_id", organizationId)
+    .eq("organization_id", organizationId);
+
+  if (dateFrom) {
+    query = query.gte("invoice_date", dateFrom);
+  }
+  if (dateTo) {
+    query = query.lte("invoice_date", dateTo);
+  }
+
+  const { data, error } = await query
     .order("invoice_date", { ascending: false })
     .order("created_at", { ascending: false });
 

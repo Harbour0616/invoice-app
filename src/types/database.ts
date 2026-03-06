@@ -85,3 +85,12 @@ export type ConfirmationRequest = {
   created_at: string;
   completed_at: string | null;
 };
+
+export type AppSetting = {
+  id: string;
+  organization_id: string;
+  key: string;
+  value: string;
+  created_at: string;
+  updated_at: string;
+};

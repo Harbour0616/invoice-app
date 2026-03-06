@@ -2,7 +2,12 @@
 
 import { useState, useMemo } from "react";
 import type { InvoiceWithDetails } from "./actions";
-import { deleteInvoice, createConfirmationRequestFromList } from "./actions";
+import {
+  deleteInvoice,
+  createConfirmationRequestFromList,
+  getInvoices,
+  updateDisplayMonths,
+} from "./actions";
 import { generateCSV, downloadCSV } from "@/lib/csv-export";
 import { generatePDF, downloadPDF } from "@/lib/pdf-export";
 import { createClient } from "@/lib/supabase/client";
@@ -19,36 +24,49 @@ type Props = {
   vendors: Vendor[];
   sites: Site[];
   userNames: Record<string, string>;
+  defaultDateFrom: string;
+  defaultDateTo: string;
+  displayMonths: number;
+  role: "owner" | "member";
 };
 
-export function DataList({ initialInvoices, vendors, sites, userNames }: Props) {
+export function DataList({
+  initialInvoices,
+  vendors,
+  sites,
+  userNames,
+  defaultDateFrom,
+  defaultDateTo,
+  displayMonths,
+  role,
+}: Props) {
   const [invoices, setInvoices] = useState(initialInvoices);
   const [keyword, setKeyword] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(defaultDateFrom);
+  const [dateTo, setDateTo] = useState(defaultDateTo);
   const [vendorFilter, setVendorFilter] = useState("");
   const [siteFilter, setSiteFilter] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsMonths, setSettingsMonths] = useState(displayMonths);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
+  // 日付が初期範囲外かどうか
+  const isOutOfRange = dateFrom < defaultDateFrom || dateTo > defaultDateTo;
 
   const filtered = useMemo(() => {
-    return invoices.filter((inv) => {
-      // 期間フィルター
+    const result = invoices.filter((inv) => {
       if (dateFrom && inv.invoice_date < dateFrom) return false;
       if (dateTo && inv.invoice_date > dateTo) return false;
-
-      // 取引先フィルター
       if (vendorFilter && inv.vendor?.id !== vendorFilter) return false;
-
-      // 現場フィルター
       if (siteFilter) {
         const hasSite = inv.invoice_lines.some(
           (l) => l.site?.id === siteFilter
         );
         if (!hasSite) return false;
       }
-
-      // キーワード検索
       if (keyword) {
         const kw = keyword.toLowerCase();
         const vendorMatch = inv.vendor?.name.toLowerCase().includes(kw);
@@ -59,11 +77,22 @@ export function DataList({ initialInvoices, vendors, sites, userNames }: Props) 
         const descMatch = inv.invoice_lines.some((l) =>
           l.description?.toLowerCase().includes(kw)
         );
-        if (!vendorMatch && !siteMatch && !noteMatch && !descMatch) return false;
+        if (!vendorMatch && !siteMatch && !noteMatch && !descMatch)
+          return false;
       }
-
       return true;
     });
+
+    // 未確認（site_id === null の明細を持つ）請求書を上にソート
+    result.sort((a, b) => {
+      const aHasUnknown = a.invoice_lines.some((l) => l.site_id === null);
+      const bHasUnknown = b.invoice_lines.some((l) => l.site_id === null);
+      if (aHasUnknown && !bHasUnknown) return -1;
+      if (!aHasUnknown && bHasUnknown) return 1;
+      return 0;
+    });
+
+    return result;
   }, [invoices, keyword, dateFrom, dateTo, vendorFilter, siteFilter]);
 
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -109,6 +138,30 @@ export function DataList({ initialInvoices, vendors, sites, userNames }: Props) 
       return;
     }
     window.open(data.signedUrl, "_blank");
+  };
+
+  const handleReSearch = async () => {
+    setSearchLoading(true);
+    setError("");
+    try {
+      const result = await getInvoices(dateFrom, dateTo);
+      setInvoices(result.invoices);
+    } catch {
+      setError("データの取得に失敗しました");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSettingsSaving(true);
+    const result = await updateDisplayMonths(settingsMonths);
+    setSettingsSaving(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setSettingsOpen(false);
+    }
   };
 
   return (
@@ -181,6 +234,20 @@ export function DataList({ initialInvoices, vendors, sites, userNames }: Props) 
             </select>
           </div>
         </div>
+        {isOutOfRange && (
+          <div className="mt-3 flex items-center gap-2">
+            <p className="text-sm text-amber-600">
+              表示期間が初期範囲外です。サーバーからデータを再取得してください。
+            </p>
+            <button
+              onClick={handleReSearch}
+              disabled={searchLoading}
+              className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+            >
+              {searchLoading ? "検索中..." : "再検索"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* アクションバー */}
@@ -191,6 +258,70 @@ export function DataList({ initialInvoices, vendors, sites, userNames }: Props) 
             `（全 ${invoices.length} 件中）`}
         </p>
         <div className="flex items-center gap-2">
+          {role === "owner" && (
+            <div className="relative">
+              <button
+                onClick={() => setSettingsOpen(!settingsOpen)}
+                className="p-2 border border-border text-sub-text hover:text-foreground hover:bg-muted rounded-lg cursor-pointer"
+                title="表示期間設定"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </button>
+              {settingsOpen && (
+                <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-lg shadow-lg p-4 z-10 w-56">
+                  <p className="text-sm font-medium mb-2">
+                    デフォルト表示期間
+                  </p>
+                  <select
+                    value={settingsMonths}
+                    onChange={(e) =>
+                      setSettingsMonths(parseInt(e.target.value, 10))
+                    }
+                    className="select-bordered w-full mb-3"
+                  >
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <option key={n} value={n}>
+                        {n}ヶ月前から
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSettingsOpen(false)}
+                      className="flex-1 px-3 py-1.5 border border-border text-sm rounded-lg hover:bg-muted cursor-pointer"
+                    >
+                      キャンセル
+                    </button>
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={settingsSaving}
+                      className="flex-1 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+                    >
+                      {settingsSaving ? "保存中..." : "保存"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <button
             onClick={handleExportPDF}
             disabled={filtered.length === 0 || pdfLoading}
@@ -213,21 +344,42 @@ export function DataList({ initialInvoices, vendors, sites, userNames }: Props) 
         <table className="w-full text-sm">
           <thead className="border-b border-border">
             <tr>
-              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">請求日</th>
-              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">取引先</th>
-              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">現場</th>
-              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">請求書番号</th>
-              <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">税抜合計</th>
-              <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">税込合計</th>
-              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">更新者</th>
-              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">更新日時</th>
-              <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider w-16">操作</th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                請求日
+              </th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                取引先
+              </th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                現場
+              </th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                請求書番号
+              </th>
+              <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                税抜合計
+              </th>
+              <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                税込合計
+              </th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                更新者
+              </th>
+              <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider">
+                更新日時
+              </th>
+              <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider w-16">
+                操作
+              </th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-sub-text">
+                <td
+                  colSpan={9}
+                  className="px-4 py-8 text-center text-sub-text"
+                >
                   データがありません
                 </td>
               </tr>
@@ -241,7 +393,11 @@ export function DataList({ initialInvoices, vendors, sites, userNames }: Props) 
                     setExpandedId(expandedId === inv.id ? null : inv.id)
                   }
                   onDelete={() => handleDelete(inv.id)}
-                  onOpenFile={inv.pdf_file_path ? () => handleOpenFile(inv.pdf_file_path!) : undefined}
+                  onOpenFile={
+                    inv.pdf_file_path
+                      ? () => handleOpenFile(inv.pdf_file_path!)
+                      : undefined
+                  }
                   filePath={inv.pdf_file_path}
                   onError={setError}
                   userNames={userNames}
@@ -407,12 +563,32 @@ function InvoiceRow({
                 title={isImagePath(filePath) ? "画像を開く" : "PDFを開く"}
               >
                 {isImagePath(filePath) ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+                    />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
                   </svg>
                 )}
               </button>
@@ -433,7 +609,9 @@ function InvoiceRow({
         <tr className="bg-table-row-hover">
           <td colSpan={9} className="px-4 py-3">
             {invoice.note && (
-              <p className="text-xs text-sub-text mb-2">摘要：{invoice.note}</p>
+              <p className="text-xs text-sub-text mb-2">
+                摘要：{invoice.note}
+              </p>
             )}
             <table className="w-full text-xs">
               <thead>
@@ -461,8 +639,12 @@ function InvoiceRow({
                           line.site?.name || "—"
                         )}
                       </td>
-                      <td className="py-1 pr-4 text-sub-text">{line.description || "—"}</td>
-                      <td className="py-1 pr-4">{line.account?.name || "—"}</td>
+                      <td className="py-1 pr-4 text-sub-text">
+                        {line.description || "—"}
+                      </td>
+                      <td className="py-1 pr-4">
+                        {line.account?.name || "—"}
+                      </td>
                       <td className="py-1 pr-4 text-right font-mono">
                         {formatNumber(line.amount_excl_tax)}
                       </td>

@@ -8,6 +8,7 @@ type Site = { id: string; code: string; name: string };
 type InvoiceLine = {
   id: string;
   site_id: string | null;
+  description: string | null;
   amount_excl_tax: number;
   tax_rate: number;
   tax_amount: number;
@@ -61,9 +62,6 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   const nullSiteLines = invoice.invoice_lines
     .filter((l) => l.site_id === null)
     .sort((a, b) => a.line_order - b.line_order);
-  const knownSiteLines = invoice.invoice_lines
-    .filter((l) => l.site_id !== null)
-    .sort((a, b) => a.line_order - b.line_order);
 
   const [responses, setResponses] = useState<Record<string, string>>(() => {
     if (isCompleted && request.responses) {
@@ -114,12 +112,6 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           <div className="flex justify-between">
             <span className="text-sub-text">取引先</span>
             <span className="font-bold text-foreground">{invoice.vendor?.name || "—"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sub-text">税込合計</span>
-            <span className="font-mono font-bold text-lg text-foreground">
-              ¥{formatNumber(invoice.total_incl_tax)}
-            </span>
           </div>
           <div className="flex justify-between text-sm text-sub-text">
             <span>請求日 {invoice.invoice_date}</span>
@@ -177,6 +169,11 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                         ¥{formatNumber(line.amount_incl_tax)}
                       </span>
                     </div>
+                    {line.description && (
+                      <div className="text-sm text-sub-text mt-0.5">
+                        {line.description}
+                      </div>
+                    )}
                     <div className="text-sm text-sub-text mt-0.5">
                       明細 #{line.line_order + 1}　税率 {Math.round(Number(line.tax_rate) * 100)}%
                     </div>
@@ -245,33 +242,6 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
             })}
           </div>
         </div>
-      )}
-
-      {/* 現場確定済みの明細行 — 折りたたみ可能なシンプル表示 */}
-      {knownSiteLines.length > 0 && (
-        <details className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3">
-          <summary className="px-4 py-3 text-base font-medium text-sub-text cursor-pointer">
-            確定済みの明細（{knownSiteLines.length}件）
-          </summary>
-          <div className="border-t border-border">
-            {knownSiteLines.map((line) => (
-              <div
-                key={line.id}
-                className="px-4 py-3 border-b border-table-separator last:border-b-0"
-              >
-                <div className="flex justify-between items-baseline">
-                  <span className="text-base text-foreground">{line.site?.name || "—"}</span>
-                  <span className="font-mono font-bold text-foreground">
-                    ¥{formatNumber(line.amount_incl_tax)}
-                  </span>
-                </div>
-                <div className="text-sm text-sub-text">
-                  {line.account?.name || "—"}
-                </div>
-              </div>
-            ))}
-          </div>
-        </details>
       )}
 
       {/* PDF/画像表示 */}
