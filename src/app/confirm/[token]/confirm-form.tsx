@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { submitConfirmation } from "./actions";
 
 type Site = { id: string; code: string; name: string };
@@ -246,14 +246,30 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 
       {/* PDF/画像表示 */}
       {signedFileUrl && (
-        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3">
-          <div className="px-4 py-2 border-b border-border flex items-center justify-between">
+        <div
+          className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3 flex flex-col"
+          style={{ minHeight: 0 }}
+        >
+          <div className="px-4 py-2 border-b border-border flex items-center justify-between shrink-0">
             <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
           </div>
-          <ZoomableViewer
-            src={signedFileUrl}
-            isImage={isImagePath(invoice.pdf_file_path)}
-          />
+          <div
+            style={{
+              overflowY: "auto",
+              overflowX: "hidden",
+              WebkitOverflowScrolling: "touch",
+              touchAction: "pan-y",
+              minHeight: 0,
+              maxHeight: showStickyButton
+                ? "calc(100vh - 200px)"
+                : "calc(100vh - 120px)",
+            }}
+          >
+            <AttachmentViewer
+              src={signedFileUrl}
+              isImage={isImagePath(invoice.pdf_file_path)}
+            />
+          </div>
         </div>
       )}
 
@@ -280,184 +296,28 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   );
 }
 
-function ZoomableViewer({ src, isImage }: { src: string; isImage: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const g = useRef({
-    scale: 1, tx: 0, ty: 0,
-    isDragging: false, isPinching: false,
-    lastX: 0, lastY: 0,
-    pinchDist0: 0, pinchScale0: 1,
-    pinchTx0: 0, pinchTy0: 0,
-    pinchMidX: 0, pinchMidY: 0,
-    lastTapTime: 0,
-  });
-
-  const apply = (animate = false) => {
-    const el = contentRef.current;
-    if (!el) return;
-    const { tx, ty, scale } = g.current;
-    el.style.transition = animate ? "transform 0.25s ease" : "none";
-    el.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-  };
-
-  const reset = () => {
-    g.current.scale = 1;
-    g.current.tx = 0;
-    g.current.ty = 0;
-    apply(true);
-  };
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const dist = (a: Touch, b: Touch) =>
-      Math.sqrt((a.clientX - b.clientX) ** 2 + (a.clientY - b.clientY) ** 2);
-
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      const st = g.current;
-      if (e.touches.length === 2) {
-        st.isPinching = true;
-        st.isDragging = false;
-        st.pinchDist0 = dist(e.touches[0], e.touches[1]);
-        st.pinchScale0 = st.scale;
-        st.pinchTx0 = st.tx;
-        st.pinchTy0 = st.ty;
-        const rect = el.getBoundingClientRect();
-        st.pinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-        st.pinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-      } else if (e.touches.length === 1) {
-        // Double-tap
-        const now = Date.now();
-        if (now - st.lastTapTime < 300) {
-          reset();
-          st.lastTapTime = 0;
-          return;
-        }
-        st.lastTapTime = now;
-        st.isDragging = true;
-        st.lastX = e.touches[0].clientX;
-        st.lastY = e.touches[0].clientY;
-      }
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      const st = g.current;
-      if (st.isPinching && e.touches.length === 2) {
-        const d = dist(e.touches[0], e.touches[1]);
-        const newScale = Math.max(0.5, Math.min(8, st.pinchScale0 * (d / st.pinchDist0)));
-        // Zoom toward pinch midpoint
-        const ratio = newScale / st.pinchScale0;
-        st.tx = st.pinchMidX - ratio * (st.pinchMidX - st.pinchTx0);
-        st.ty = st.pinchMidY - ratio * (st.pinchMidY - st.pinchTy0);
-        st.scale = newScale;
-        apply();
-      } else if (st.isDragging && e.touches.length === 1) {
-        st.tx += e.touches[0].clientX - st.lastX;
-        st.ty += e.touches[0].clientY - st.lastY;
-        st.lastX = e.touches[0].clientX;
-        st.lastY = e.touches[0].clientY;
-        apply();
-      }
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      const st = g.current;
-      if (e.touches.length < 2) st.isPinching = false;
-      if (e.touches.length === 0) st.isDragging = false;
-    };
-
-    // PC: mouse drag
-    const onMouseDown = (e: MouseEvent) => {
-      e.preventDefault();
-      const st = g.current;
-      st.isDragging = true;
-      st.lastX = e.clientX;
-      st.lastY = e.clientY;
-    };
-    const onMouseMove = (e: MouseEvent) => {
-      const st = g.current;
-      if (!st.isDragging) return;
-      st.tx += e.clientX - st.lastX;
-      st.ty += e.clientY - st.lastY;
-      st.lastX = e.clientX;
-      st.lastY = e.clientY;
-      apply();
-    };
-    const onMouseUp = () => { g.current.isDragging = false; };
-
-    // PC: wheel zoom
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const st = g.current;
-      const factor = e.deltaY > 0 ? 0.9 : 1.1;
-      const newScale = Math.max(0.5, Math.min(8, st.scale * factor));
-      const rect = el.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      const ratio = newScale / st.scale;
-      st.tx = mx - ratio * (mx - st.tx);
-      st.ty = my - ratio * (my - st.ty);
-      st.scale = newScale;
-      apply();
-    };
-
-    // PC: double-click reset
-    const onDblClick = () => reset();
-
-    el.addEventListener("touchstart", onTouchStart, { passive: false });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd);
-    el.addEventListener("mousedown", onMouseDown);
-    el.addEventListener("mousemove", onMouseMove);
-    el.addEventListener("mouseup", onMouseUp);
-    el.addEventListener("mouseleave", onMouseUp);
-    el.addEventListener("wheel", onWheel, { passive: false });
-    el.addEventListener("dblclick", onDblClick);
-
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-      el.removeEventListener("mousedown", onMouseDown);
-      el.removeEventListener("mousemove", onMouseMove);
-      el.removeEventListener("mouseup", onMouseUp);
-      el.removeEventListener("mouseleave", onMouseUp);
-      el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("dblclick", onDblClick);
-    };
-  }, []);
-
+function AttachmentViewer({ src, isImage }: { src: string; isImage: boolean }) {
   return (
-    <div
-      ref={containerRef}
-      style={{
-        overflow: "visible",
-        touchAction: "none",
-        userSelect: "none",
-        cursor: "grab",
-        position: "relative",
-      }}
-    >
-      <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
-        {isImage ? (
-          <img
-            src={src}
-            style={{ width: "100%", height: "auto", display: "block" }}
-            alt=""
-            draggable={false}
-          />
-        ) : (
-          <iframe
-            src={src}
-            style={{ width: "100%", height: "500px", border: "none", pointerEvents: "none" }}
-          />
-        )}
-      </div>
+    <div style={{ padding: "8px" }}>
+      {isImage ? (
+        <img
+          src={src}
+          style={{ width: "100%", height: "auto", display: "block" }}
+          alt="添付ファイル"
+          draggable={false}
+        />
+      ) : (
+        <iframe
+          src={src}
+          style={{
+            width: "100%",
+            height: "80vh",
+            minHeight: "500px",
+            border: "none",
+            display: "block",
+          }}
+        />
+      )}
     </div>
   );
 }
