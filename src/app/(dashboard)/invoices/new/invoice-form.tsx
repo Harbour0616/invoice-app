@@ -536,15 +536,14 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
                   : "—"}
               </div>
               <div style={{ minWidth: '36px', flexShrink: 0 }}>
-                {lines.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeLine(line.key)}
-                    style={{ minWidth: '36px', minHeight: '36px', color: 'red', fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    ×
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => removeLine(line.key)}
+                  disabled={lines.length <= 1}
+                  style={{ minWidth: '36px', minHeight: '36px', color: lines.length <= 1 ? '#ccc' : 'red', fontSize: '20px', background: 'none', border: 'none', cursor: lines.length <= 1 ? 'default' : 'pointer' }}
+                >
+                  ×
+                </button>
               </div>
             </div>
           ))}

@@ -246,7 +246,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 
       {/* PDF/画像表示 */}
       {signedFileUrl && (
-        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3 overflow-hidden">
+        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3">
           <div className="px-4 py-2 border-b border-border flex items-center justify-between">
             <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
           </div>
@@ -433,31 +433,30 @@ function ZoomableViewer({ src, isImage }: { src: string; isImage: boolean }) {
   }, []);
 
   return (
-    <div style={{ overflow: "hidden", position: "relative" }}>
-      <div
-        ref={containerRef}
-        style={{
-          overflow: "visible",
-          touchAction: "none",
-          userSelect: "none",
-          cursor: "grab",
-        }}
-      >
-        <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
-          {isImage ? (
-            <img
-              src={src}
-              style={{ width: "100%", height: "auto", display: "block" }}
-              alt=""
-              draggable={false}
-            />
-          ) : (
-            <iframe
-              src={src}
-              style={{ width: "100%", height: "500px", border: "none", pointerEvents: "none" }}
-            />
-          )}
-        </div>
+    <div
+      ref={containerRef}
+      style={{
+        overflow: "visible",
+        touchAction: "none",
+        userSelect: "none",
+        cursor: "grab",
+        position: "relative",
+      }}
+    >
+      <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
+        {isImage ? (
+          <img
+            src={src}
+            style={{ width: "100%", height: "auto", display: "block" }}
+            alt=""
+            draggable={false}
+          />
+        ) : (
+          <iframe
+            src={src}
+            style={{ width: "100%", height: "500px", border: "none", pointerEvents: "none" }}
+          />
+        )}
       </div>
     </div>
   );
