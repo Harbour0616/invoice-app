@@ -133,19 +133,12 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
         )}
       </div>
 
-      {/* PDF/画像表示 — 画面幅いっぱい、ピンチズーム可能 */}
+      {/* 添付ファイル */}
       {signedFileUrl && (
-        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3" onTouchStart={() => {}}>
-          <div className="px-4 py-2 border-b border-border">
-            <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
-          </div>
+        <div className="mb-3">
+          <p className="text-sm mb-2">添付ファイル</p>
           {isImagePath(invoice.pdf_file_path) ? (
-            <img
-              src={signedFileUrl}
-              draggable={false}
-              style={{ width: '100%', height: 'auto', display: 'block', WebkitTouchCallout: 'none', userSelect: 'none', pointerEvents: 'none' }}
-              alt=""
-            />
+            <img src={signedFileUrl} style={{ width: '100%', height: 'auto' }} alt="" />
           ) : (
             <iframe
               src={signedFileUrl}
