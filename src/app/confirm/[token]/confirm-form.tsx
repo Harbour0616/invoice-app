@@ -57,6 +57,17 @@ function isImagePath(path: string | null | undefined): boolean {
   return /\.(jpg|jpeg|png)$/i.test(path);
 }
 
+const C = {
+  green: "#2F9E77",
+  greenDark: "#1F7A5C",
+  mint: "#DDF5EC",
+  bg: "#F7FBF9",
+  white: "#FFFFFF",
+  text: "#1F2D29",
+  sub: "#7B8A86",
+  border: "#D8E5E0",
+};
+
 export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMarkerUrl }: Props) {
   const isCompleted = request.status === "completed";
   const nullSiteLines = invoice.invoice_lines
@@ -77,11 +88,11 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  // 現場選択で開いている行
-  const [expandedLine, setExpandedLine] = useState<string | null>(null);
+  const [attachmentOpen, setAttachmentOpen] = useState(false);
 
   const allAnswered = nullSiteLines.every((l) => responses[l.id]);
   const showStickyButton = !isCompleted && !submitted && nullSiteLines.length > 0;
+  const isDone = isCompleted || submitted;
 
   const handleSubmit = async () => {
     if (!allAnswered) {
@@ -105,174 +116,267 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   };
 
   return (
-    <div className={showStickyButton ? "pb-24" : ""} style={{ overscrollBehavior: 'none' }}>
-      {/* 請求書情報 */}
-      <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-4 mb-3">
-        <div className="space-y-2 text-base">
-          <div className="flex justify-between">
-            <span className="text-sub-text">取引先</span>
-            <span className="font-bold text-foreground">{invoice.vendor?.name || "—"}</span>
-          </div>
-          <div className="flex justify-between text-sm text-sub-text">
-            <span>請求日 {invoice.invoice_date}</span>
-            {invoice.invoice_number && <span>No. {invoice.invoice_number}</span>}
-          </div>
-        </div>
-        {invoice.note && (
-          <p className="text-sm text-sub-text mt-2 pt-2 border-t border-border">
-            摘要：{invoice.note}
-          </p>
-        )}
-      </div>
+    <div style={{ overscrollBehavior: "none", paddingBottom: showStickyButton ? 100 : 24 }}>
 
-      {/* ステータスメッセージ */}
-      {(isCompleted || submitted) && (
-        <div className="mb-3 p-4 bg-green-50 text-green-700 rounded-[10px] text-base font-medium text-center">
+      {/* 完了メッセージ */}
+      {isDone && (
+        <div style={{
+          background: C.mint,
+          color: C.greenDark,
+          borderRadius: 12,
+          padding: "20px 16px",
+          marginBottom: 20,
+          textAlign: "center",
+          fontSize: 16,
+          fontWeight: 600,
+          lineHeight: 1.6,
+        }}>
+          <span style={{ fontSize: 28, display: "block", marginBottom: 4 }}>&#10003;</span>
           回答済みです。ありがとうございました。
         </div>
       )}
 
       {error && (
-        <div className="mb-3 p-4 bg-red-50 text-red-600 rounded-[10px] text-base">
+        <div style={{
+          background: "#FEF2F2",
+          color: "#DC2626",
+          borderRadius: 12,
+          padding: "14px 16px",
+          marginBottom: 16,
+          fontSize: 15,
+        }}>
           {error}
         </div>
       )}
 
-      {/* 現場不明の明細行 — カード形式 */}
-      {nullSiteLines.length > 0 && (
-        <div className="mb-3">
-          <div className="px-1 py-2">
-            <h2 className="text-base font-bold text-amber-800">
-              現場を選択してください（{nullSiteLines.length}件）
-            </h2>
+      {/* ヘッダー */}
+      {!isDone && (
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: 0, lineHeight: 1.4 }}>
+            この費用はどの現場ですか？
+          </h2>
+          <p style={{ fontSize: 15, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>
+            1件選ぶだけで完了します
+          </p>
+          <p style={{ fontSize: 13, color: C.sub, margin: "4px 0 0", lineHeight: 1.5 }}>
+            迷った場合は下の請求書をご確認ください
+          </p>
+        </div>
+      )}
+
+      {/* 請求情報カード */}
+      <div style={{
+        background: C.white,
+        borderRadius: 12,
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        padding: 16,
+        marginBottom: 16,
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+          <span style={{ fontSize: 13, color: C.sub }}>取引先</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: C.text }}>{invoice.vendor?.name || "—"}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: 13, color: C.sub }}>請求日</span>
+          <span style={{ fontSize: 14, color: C.text }}>{invoice.invoice_date}</span>
+        </div>
+        {invoice.invoice_number && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 8 }}>
+            <span style={{ fontSize: 13, color: C.sub }}>請求番号</span>
+            <span style={{ fontSize: 14, color: C.text }}>{invoice.invoice_number}</span>
           </div>
-          <div className="space-y-3">
-            {nullSiteLines.map((line) => {
-              const selected = responses[line.id];
-              const isExpanded = expandedLine === line.id;
-              const isDone = isCompleted || submitted;
+        )}
+        {invoice.note && (
+          <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 12, paddingTop: 12 }}>
+            <span style={{ fontSize: 13, color: C.sub }}>摘要：</span>
+            <span style={{ fontSize: 14, color: C.text }}>{invoice.note}</span>
+          </div>
+        )}
+      </div>
 
-              return (
-                <div
-                  key={line.id}
-                  className={`bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] border-2 ${
-                    selected ? "border-amber-400" : "border-border"
-                  }`}
-                >
-                  {/* 明細情報 */}
-                  <div className="px-4 py-3 border-b border-border">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-base font-medium text-foreground">
-                        {line.account?.name || "—"}
-                      </span>
-                      <span className="text-lg font-mono font-bold text-foreground shrink-0">
-                        ¥{formatNumber(line.amount_incl_tax)}
-                      </span>
-                    </div>
-                    {line.description && (
-                      <div className="text-sm text-sub-text mt-0.5">
-                        {line.description}
-                      </div>
-                    )}
-                    <div className="text-sm text-sub-text mt-0.5">
-                      明細 #{line.line_order + 1}　税率 {Math.round(Number(line.tax_rate) * 100)}%
-                    </div>
-                  </div>
+      {/* 費用サマリー＋現場選択（各明細行ごと） */}
+      {nullSiteLines.map((line) => {
+        const selected = responses[line.id];
 
-                  {/* 現場選択 */}
-                  <div className="px-4 py-3">
-                    {isDone ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-600 text-lg">&#10003;</span>
-                        <span className="text-base font-bold text-green-700">
-                          {getSiteName(selected)}
-                        </span>
-                      </div>
-                    ) : selected && !isExpanded ? (
-                      <button
-                        type="button"
-                        onClick={() => setExpandedLine(line.id)}
-                        className="w-full flex items-center justify-between py-2 cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-amber-600 text-lg">&#10003;</span>
-                          <span className="text-base font-bold text-foreground">
-                            {getSiteName(selected)}
-                          </span>
-                        </div>
-                        <span className="text-sm text-amber-600">変更</span>
-                      </button>
-                    ) : (
-                      <div className="space-y-2">
-                        {sites.map((s) => (
-                          <label
-                            key={s.id}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg border-2 cursor-pointer ${
-                              selected === s.id
-                                ? "border-amber-500 bg-amber-50"
-                                : "border-border active:bg-muted"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name={`site-${line.id}`}
-                              value={s.id}
-                              checked={selected === s.id}
-                              onChange={() => {
-                                setResponses((prev) => ({
-                                  ...prev,
-                                  [line.id]: s.id,
-                                }));
-                                // 選択したら閉じる
-                                setTimeout(() => setExpandedLine(null), 150);
-                              }}
-                              className="w-5 h-5 accent-amber-600 shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <div className="text-base font-medium text-foreground">{s.name}</div>
-                              <div className="text-sm text-sub-text">{s.code}</div>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+        return (
+          <div key={line.id} style={{ marginBottom: 20 }}>
+            {/* 費用サマリーカード */}
+            <div style={{
+              background: C.white,
+              borderRadius: 12,
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              padding: 16,
+              marginBottom: 12,
+              borderLeft: `4px solid ${C.green}`,
+            }}>
+              <div style={{ fontSize: 15, color: C.sub, marginBottom: 4 }}>
+                {line.account?.name || "—"}
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.text, fontFamily: "monospace", lineHeight: 1.2 }}>
+                ¥{formatNumber(line.amount_incl_tax)}
+              </div>
+              <div style={{ fontSize: 13, color: C.sub, marginTop: 8 }}>
+                明細 #{line.line_order + 1} ・ 税率 {Math.round(Number(line.tax_rate) * 100)}%
+                {line.description && ` ・ ${line.description}`}
+              </div>
+            </div>
+
+            {/* 現場選択エリア */}
+            {isDone ? (
+              <div style={{
+                background: C.mint,
+                borderRadius: 12,
+                padding: "14px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}>
+                <span style={{ fontSize: 20, color: C.green }}>&#10003;</span>
+                <span style={{ fontSize: 16, fontWeight: 600, color: C.greenDark }}>
+                  {getSiteName(selected)}
+                </span>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 10 }}>
+                  この費用がかかった現場を1件選んでください
                 </div>
-              );
-            })}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {sites.map((s) => {
+                    const isSelected = selected === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setResponses((prev) => ({ ...prev, [line.id]: s.id }));
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          width: "100%",
+                          padding: "14px 16px",
+                          borderRadius: 10,
+                          border: `2px solid ${isSelected ? C.green : C.border}`,
+                          background: isSelected ? C.mint : C.white,
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <span style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          border: `2px solid ${isSelected ? C.green : C.border}`,
+                          background: isSelected ? C.green : "transparent",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          color: C.white,
+                          fontSize: 13,
+                          fontWeight: 700,
+                        }}>
+                          {isSelected && "\u2713"}
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 500, color: C.text }}>{s.name}</div>
+                          <div style={{ fontSize: 13, color: C.sub }}>{s.code}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })}
 
-      {/* PDF/画像表示 */}
+      {/* 添付ファイルエリア（折りたたみ） */}
       {signedFileUrl && (
-        <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-3">
-          <div className="px-4 py-2 border-b border-border flex items-center justify-between">
-            <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
-          </div>
-          <AttachmentViewer
-            src={signedFileUrl}
-            isImage={isImagePath(invoice.pdf_file_path)}
-            maxHeight={showStickyButton ? "calc(100vh - 200px)" : "calc(100vh - 120px)"}
-          />
+        <div style={{
+          background: C.white,
+          borderRadius: 12,
+          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          marginBottom: 16,
+          overflow: "hidden",
+        }}>
+          <button
+            type="button"
+            onClick={() => setAttachmentOpen(!attachmentOpen)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              padding: "14px 16px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 15,
+              fontWeight: 500,
+              color: C.text,
+            }}
+          >
+            <span>請求書を確認する</span>
+            <span style={{
+              fontSize: 12,
+              color: C.sub,
+              transition: "transform 0.2s ease",
+              transform: attachmentOpen ? "rotate(180deg)" : "rotate(0deg)",
+            }}>
+              &#9660;
+            </span>
+          </button>
+          {attachmentOpen && (
+            <div style={{ borderTop: `1px solid ${C.border}` }}>
+              <AttachmentViewer
+                src={signedFileUrl}
+                isImage={isImagePath(invoice.pdf_file_path)}
+                maxHeight={showStickyButton ? "calc(100vh - 200px)" : "calc(100vh - 120px)"}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {/* Sticky 回答ボタン */}
+      {/* 下部固定CTAボタン */}
       {showStickyButton && (
-        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-3 shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
-          <div className="max-w-3xl mx-auto">
+        <div style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: C.white,
+          borderTop: `1px solid ${C.border}`,
+          padding: "12px 16px",
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+          boxShadow: "0 -2px 12px rgba(0,0,0,0.08)",
+          zIndex: 50,
+        }}>
+          <div style={{ maxWidth: 640, margin: "0 auto" }}>
             <button
               type="button"
               onClick={handleSubmit}
               disabled={loading || !allAnswered}
-              className={`w-full py-4 rounded-[10px] text-lg font-bold cursor-pointer ${
-                allAnswered
-                  ? "bg-amber-600 text-white active:bg-amber-700"
-                  : "bg-muted text-sub-text"
-              } disabled:opacity-50`}
+              style={{
+                width: "100%",
+                padding: "16px 24px",
+                borderRadius: 12,
+                border: "none",
+                fontSize: 17,
+                fontWeight: 700,
+                cursor: allAnswered ? "pointer" : "default",
+                background: allAnswered ? C.green : C.border,
+                color: allAnswered ? C.white : C.sub,
+                transition: "all 0.2s ease",
+                opacity: loading ? 0.6 : 1,
+              }}
             >
-              {loading ? "送信中..." : allAnswered ? "回答を送信" : "すべての現場を選択してください"}
+              {loading ? "送信中..." : allAnswered ? "回答を送信する" : "現場を1件選択してください"}
             </button>
           </div>
         </div>
