@@ -140,18 +140,15 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
             <h2 className="text-sm font-medium text-sub-text">添付ファイル</h2>
           </div>
           {isImagePath(invoice.pdf_file_path) ? (
-            <img
-              src={signedFileUrl}
-              draggable={false}
-              style={{ width: '100%', height: 'auto', display: 'block', WebkitTouchCallout: 'none', userSelect: 'none', pointerEvents: 'none' }}
-              alt=""
-            />
+            <div style={{ position: 'relative' }}>
+              <img src={signedFileUrl} style={{ width: '100%', height: 'auto', display: 'block' }} alt="" />
+              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
+            </div>
           ) : (
-            <iframe
-              src={signedFileUrl}
-              className="w-full h-[60vh] sm:h-[500px]"
-              title="請求書PDF"
-            />
+            <div style={{ position: 'relative' }}>
+              <iframe src={signedFileUrl} style={{ width: '100%', height: '500px', border: 'none' }} />
+              <div style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }} />
+            </div>
           )}
         </div>
       )}
