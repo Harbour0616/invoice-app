@@ -45,13 +45,14 @@ export function SiteCostChart({ data, accountKeys }: Props) {
 
   return (
     <div
-      className="rounded-[20px] border border-border bg-card mb-6"
-      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.03)" }}
+      className="rounded-[20px] border border-border bg-card mb-8"
+      style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}
     >
-      <div className="px-7 pt-6 pb-2">
-        <h2 className="text-sm font-semibold text-foreground">科目別費用内訳</h2>
+      <div className="px-7 pt-6 pb-1 flex items-center justify-between">
+        <h2 className="text-[13px] font-bold text-foreground tracking-wide">科目別費用内訳</h2>
+        <span className="text-[11px] text-sub-text">{data.length} 現場</span>
       </div>
-      <div className="px-3 pb-5">
+      <div className="px-4 pb-6">
         <ResponsiveContainer width="100%" height={Math.max(280, data.length * 48 + 80)}>
           <BarChart
             data={data}
@@ -59,7 +60,7 @@ export function SiteCostChart({ data, accountKeys }: Props) {
             margin={{ left: 8, right: 24, top: 8, bottom: 0 }}
             barCategoryGap="20%"
           >
-            <CartesianGrid horizontal={false} stroke="#EDF2F0" strokeDasharray="3 3" />
+            <CartesianGrid horizontal={false} stroke="#E8F0EC" strokeDasharray="4 4" />
             <XAxis
               type="number"
               tickFormatter={formatYen}
@@ -76,13 +77,14 @@ export function SiteCostChart({ data, accountKeys }: Props) {
               tickLine={false}
             />
             <Tooltip
-              cursor={{ fill: "rgba(47,158,119,0.04)" }}
+              cursor={{ fill: "rgba(47,158,119,0.05)" }}
               contentStyle={{
-                borderRadius: 12,
+                borderRadius: 14,
                 border: "1px solid #D8E5E0",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                padding: "10px 14px",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                padding: "12px 16px",
                 fontSize: 13,
+                lineHeight: 1.6,
               }}
               formatter={(value, name) => [
                 `¥${Number(value).toLocaleString("ja-JP")}`,
@@ -91,17 +93,17 @@ export function SiteCostChart({ data, accountKeys }: Props) {
             />
             <Legend
               iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
+              iconSize={7}
+              wrapperStyle={{ fontSize: 11, paddingTop: 16, color: "#7B8A86" }}
             />
-            {accountKeys.map((ak) => (
+            {accountKeys.map((ak, i) => (
               <Bar
                 key={ak.key}
                 dataKey={ak.key}
                 name={ak.name}
                 stackId="cost"
                 fill={ak.color}
-                radius={[0, 0, 0, 0]}
+                radius={i === accountKeys.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]}
               />
             ))}
           </BarChart>

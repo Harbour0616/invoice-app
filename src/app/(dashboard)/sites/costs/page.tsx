@@ -117,22 +117,22 @@ export default async function SiteCostsPage() {
     <div className="max-w-[1200px] mx-auto px-6 lg:px-12 pb-12">
       {/* ページヘッダー */}
       <div className="flex items-baseline justify-between mb-6">
-        <h1 className="text-lg font-bold text-foreground">現場別費用</h1>
-        <span className="text-xs text-sub-text">{siteCosts.length} 現場</span>
+        <h1 className="text-[17px] font-bold text-foreground tracking-tight">現場別費用</h1>
+        <span className="text-[11px] text-sub-text font-medium">{siteCosts.length} 現場</span>
       </div>
 
       {/* 合計金額ヒーロー */}
       <div
-        className="rounded-[20px] border border-border mb-6 px-8 py-6"
+        className="rounded-[20px] border border-border mb-8 px-8 py-7"
         style={{
-          background: "linear-gradient(135deg, #FFFFFF 0%, #F2FAF6 100%)",
-          boxShadow: "0 2px 8px rgba(47,158,119,0.06)",
+          background: "linear-gradient(135deg, #FFFFFF 0%, #F0F9F4 60%, #E6F5ED 100%)",
+          boxShadow: "0 2px 12px rgba(47,158,119,0.07)",
         }}
       >
-        <div className="text-xs font-medium text-sub-text tracking-wide mb-2">
+        <div className="text-[11px] font-semibold text-sub-text uppercase tracking-widest mb-2">
           税抜費用合計
         </div>
-        <div className="text-3xl font-bold font-mono text-primary tracking-tight">
+        <div className="text-[2.25rem] font-extrabold font-mono text-primary tracking-tight leading-none">
           ¥{formatNumber(grandTotal)}
         </div>
       </div>
@@ -140,36 +140,47 @@ export default async function SiteCostsPage() {
       {/* 科目別積み上げ棒グラフ */}
       <SiteCostChart data={chartData} accountKeys={accountKeys} />
 
+      {/* 区切り */}
+      <div className="h-px bg-border mb-6" />
+
       {/* 現場一覧セクション */}
       {siteCosts.length === 0 ? (
         <p className="text-sub-text text-sm">データがありません</p>
       ) : (
         <>
-          <div className="text-xs font-semibold text-sub-text uppercase tracking-wider mb-3">
+          <div className="text-[11px] font-semibold text-sub-text uppercase tracking-widest mb-3">
             現場一覧
           </div>
-          <div className="flex flex-col gap-2.5">
-            {siteCosts.map((site, idx) => (
-              <div
-                key={site.id}
-                className="group bg-card rounded-[16px] border border-border px-6 py-4 flex items-center justify-between transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <span className="text-xs font-mono text-sub-text w-6 shrink-0 text-right">
-                    {idx + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-foreground truncate">
-                      {site.name}
+          <div className="flex flex-col gap-2">
+            {siteCosts.map((site, idx) => {
+              const pct = grandTotal > 0 ? (site.total / grandTotal) * 100 : 0;
+              return (
+                <div
+                  key={site.id}
+                  className="group bg-card rounded-[16px] border border-border px-6 py-4 flex items-center justify-between transition-all hover:shadow-md hover:border-primary/20"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <span className="text-[11px] font-mono text-sub-text/60 w-5 shrink-0 text-right">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-foreground truncate">
+                        {site.name}
+                      </div>
+                      <div className="text-[11px] text-sub-text mt-0.5">{site.code}</div>
                     </div>
-                    <div className="text-[11px] text-sub-text mt-0.5">{site.code}</div>
+                  </div>
+                  <div className="flex items-baseline gap-3 shrink-0 ml-4">
+                    <span className="text-[11px] font-medium text-sub-text/70 tabular-nums">
+                      {pct.toFixed(1)}%
+                    </span>
+                    <span className="text-[15px] font-bold font-mono text-foreground tabular-nums">
+                      ¥{formatNumber(site.total)}
+                    </span>
                   </div>
                 </div>
-                <div className="text-base font-bold font-mono text-foreground tabular-nums shrink-0 ml-4">
-                  ¥{formatNumber(site.total)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
