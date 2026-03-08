@@ -17,8 +17,6 @@ type Props = {
 };
 
 function formatYen(value: number): string {
-  if (value >= 10_000_000) return `${(value / 1_000_000).toFixed(0)}M`;
-  if (value >= 10_000) return `${(value / 10_000).toFixed(0)}万`;
   return value.toLocaleString("ja-JP");
 }
 
@@ -52,7 +50,7 @@ export function SiteCostChart({ data, accountKeys }: Props) {
             <YAxis
               type="category"
               dataKey="name"
-              width={96}
+              width={150}
               tick={{ fontSize: 12, fill: "#1F2D29", fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
