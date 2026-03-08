@@ -207,7 +207,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                 </div>
               )}
               <div style={{ fontSize: 28, fontWeight: 700, color: C.text, fontFamily: "monospace", lineHeight: 1.2 }}>
-                ¥{formatNumber(line.amount_incl_tax)}
+                ¥{formatNumber(line.amount_excl_tax)}
               </div>
             </div>
 
