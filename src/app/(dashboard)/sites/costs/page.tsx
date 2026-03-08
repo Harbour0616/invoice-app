@@ -110,9 +110,8 @@ export default async function SiteCostsPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 lg:px-12 pb-12">
       {/* ページヘッダー */}
-      <div className="flex items-baseline justify-between mb-6">
+      <div className="mb-6">
         <h1 className="text-[17px] font-bold text-foreground tracking-tight">現場別費用</h1>
-        <span className="text-[11px] text-sub-text font-medium">{siteCosts.length} 現場</span>
       </div>
 
       <SiteCostContent
