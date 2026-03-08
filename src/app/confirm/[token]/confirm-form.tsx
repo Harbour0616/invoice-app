@@ -546,6 +546,71 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
 }
 
 function CompletionScreen() {
+  const confettiRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = confettiRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const COLORS = ["#2F9E77", "#8FE3BF", "#DDF5EC", "#F5A623", "#6DCAA3", "#FFFFFF"];
+    const COUNT = 60;
+
+    const pieces = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * -canvas.height,
+      w: 4 + Math.random() * 6,
+      h: 6 + Math.random() * 8,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      speed: 1.5 + Math.random() * 2.5,
+      drift: (Math.random() - 0.5) * 1.2,
+      wobble: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.03 + Math.random() * 0.04,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.08,
+      opacity: 0.7 + Math.random() * 0.3,
+    }));
+
+    let frame: number;
+    let done = 0;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      done = 0;
+
+      for (const p of pieces) {
+        p.y += p.speed;
+        p.x += p.drift + Math.sin(p.wobble) * 0.8;
+        p.wobble += p.wobbleSpeed;
+        p.rotation += p.rotationSpeed;
+
+        if (p.y > canvas.height + 20) {
+          done++;
+          continue;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.globalAlpha = p.opacity;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+
+      if (done < COUNT) {
+        frame = requestAnimationFrame(draw);
+      }
+    };
+
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div style={{
       position: "fixed",
@@ -559,6 +624,17 @@ function CompletionScreen() {
       zIndex: 100,
       overflowY: "auto",
     }}>
+      {/* 紙吹雪 */}
+      <canvas
+        ref={confettiRef}
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 101,
+        }}
+      />
+
       {/* 上部タイトル */}
       <div style={{
         paddingTop: 56,
