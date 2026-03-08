@@ -4,15 +4,15 @@ import { SiteCostChart } from "./site-cost-chart";
 
 const CHART_COLORS = [
   "#2F9E77",
-  "#3B82F6",
-  "#F59E0B",
-  "#8B5CF6",
-  "#EF4444",
-  "#06B6D4",
-  "#EC4899",
-  "#84CC16",
-  "#F97316",
-  "#6366F1",
+  "#5BA8D9",
+  "#E8A838",
+  "#9B7ED8",
+  "#E06B6B",
+  "#4DBCB0",
+  "#D479A8",
+  "#7DB856",
+  "#D98E4E",
+  "#7C8CF5",
 ];
 
 function formatNumber(n: number): string {
@@ -114,39 +114,64 @@ export default async function SiteCostsPage() {
   });
 
   return (
-    <div className="max-w-[1200px] mx-auto px-12">
-      <h1 className="text-xl font-bold mb-6">現場別費用</h1>
+    <div className="max-w-[1200px] mx-auto px-6 lg:px-12 pb-12">
+      {/* ページヘッダー */}
+      <div className="flex items-baseline justify-between mb-6">
+        <h1 className="text-lg font-bold text-foreground">現場別費用</h1>
+        <span className="text-xs text-sub-text">{siteCosts.length} 現場</span>
+      </div>
 
-      {/* 合計金額 */}
-      <div className="card mb-6 flex items-center justify-between">
-        <span className="text-sub-text text-sm">税抜費用合計</span>
-        <span className="text-2xl font-bold font-mono text-primary">
+      {/* 合計金額ヒーロー */}
+      <div
+        className="rounded-[20px] border border-border mb-6 px-8 py-6"
+        style={{
+          background: "linear-gradient(135deg, #FFFFFF 0%, #F2FAF6 100%)",
+          boxShadow: "0 2px 8px rgba(47,158,119,0.06)",
+        }}
+      >
+        <div className="text-xs font-medium text-sub-text tracking-wide mb-2">
+          税抜費用合計
+        </div>
+        <div className="text-3xl font-bold font-mono text-primary tracking-tight">
           ¥{formatNumber(grandTotal)}
-        </span>
+        </div>
       </div>
 
       {/* 科目別積み上げ棒グラフ */}
       <SiteCostChart data={chartData} accountKeys={accountKeys} />
 
-      {/* 現場ごとのカード */}
+      {/* 現場一覧セクション */}
       {siteCosts.length === 0 ? (
         <p className="text-sub-text text-sm">データがありません</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {siteCosts.map((site) => (
-            <div key={site.id} className="card flex items-center justify-between !py-5">
-              <div>
-                <div className="text-base font-bold text-foreground">
-                  {site.name}
+        <>
+          <div className="text-xs font-semibold text-sub-text uppercase tracking-wider mb-3">
+            現場一覧
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {siteCosts.map((site, idx) => (
+              <div
+                key={site.id}
+                className="group bg-card rounded-[16px] border border-border px-6 py-4 flex items-center justify-between transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <span className="text-xs font-mono text-sub-text w-6 shrink-0 text-right">
+                    {idx + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-foreground truncate">
+                      {site.name}
+                    </div>
+                    <div className="text-[11px] text-sub-text mt-0.5">{site.code}</div>
+                  </div>
                 </div>
-                <div className="text-xs text-sub-text mt-0.5">{site.code}</div>
+                <div className="text-base font-bold font-mono text-foreground tabular-nums shrink-0 ml-4">
+                  ¥{formatNumber(site.total)}
+                </div>
               </div>
-              <div className="text-lg font-bold font-mono text-foreground">
-                ¥{formatNumber(site.total)}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
