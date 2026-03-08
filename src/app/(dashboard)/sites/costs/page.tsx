@@ -1,5 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { getOrganization } from "@/lib/get-organization";
+import { SiteCostChart } from "./site-cost-chart";
+
+const CHART_COLORS = [
+  "#2F9E77",
+  "#3B82F6",
+  "#F59E0B",
+  "#8B5CF6",
+  "#EF4444",
+  "#06B6D4",
+  "#EC4899",
+  "#84CC16",
+  "#F97316",
+  "#6366F1",
+];
 
 function formatNumber(n: number): string {
   return n.toLocaleString("ja-JP");
@@ -16,18 +30,24 @@ export default async function SiteCostsPage() {
       id,
       invoice_lines(
         site_id,
+        account_id,
         amount_excl_tax,
-        site:sites(id, code, name)
+        site:sites(id, code, name),
+        account:accounts(id, code, name)
       )
     `
     )
     .eq("organization_id", organizationId);
 
-  // site_id ごとに税抜金額を集計
+  // site_id ごとに税抜金額を集計 + site×account の内訳
   const siteMap = new Map<
     string,
     { id: string; code: string; name: string; total: number }
   >();
+  // site_id -> account_id -> amount
+  const breakdownMap = new Map<string, Map<string, number>>();
+  // account_id -> name
+  const accountNameMap = new Map<string, string>();
 
   for (const inv of invoices || []) {
     for (const line of inv.invoice_lines) {
@@ -36,6 +56,7 @@ export default async function SiteCostsPage() {
       const site = Array.isArray(siteRaw) ? siteRaw[0] as { id: string; code: string; name: string } | undefined : siteRaw as { id: string; code: string; name: string } | null;
       if (!site) continue;
 
+      // サイト合計
       const existing = siteMap.get(site.id);
       if (existing) {
         existing.total += line.amount_excl_tax;
@@ -47,6 +68,24 @@ export default async function SiteCostsPage() {
           total: line.amount_excl_tax,
         });
       }
+
+      // 科目別内訳
+      if (line.account_id) {
+        const accountRaw = line.account as unknown;
+        const account = Array.isArray(accountRaw) ? accountRaw[0] as { id: string; code: string; name: string } | undefined : accountRaw as { id: string; code: string; name: string } | null;
+        if (account) {
+          accountNameMap.set(account.id, account.name);
+        }
+
+        if (!breakdownMap.has(site.id)) {
+          breakdownMap.set(site.id, new Map());
+        }
+        const siteAccounts = breakdownMap.get(site.id)!;
+        siteAccounts.set(
+          line.account_id,
+          (siteAccounts.get(line.account_id) || 0) + line.amount_excl_tax
+        );
+      }
     }
   }
 
@@ -56,6 +95,23 @@ export default async function SiteCostsPage() {
   );
 
   const grandTotal = siteCosts.reduce((sum, s) => sum + s.total, 0);
+
+  // グラフ用データ構築
+  const allAccountIds = Array.from(accountNameMap.keys());
+  const accountKeys = allAccountIds.map((id, i) => ({
+    key: id,
+    name: accountNameMap.get(id) || id,
+    color: CHART_COLORS[i % CHART_COLORS.length],
+  }));
+
+  const chartData = siteCosts.map((site) => {
+    const row: Record<string, string | number> = { name: site.name };
+    const siteAccounts = breakdownMap.get(site.id);
+    for (const accId of allAccountIds) {
+      row[accId] = siteAccounts?.get(accId) || 0;
+    }
+    return row;
+  });
 
   return (
     <div className="max-w-[1200px] mx-auto px-12">
@@ -68,6 +124,9 @@ export default async function SiteCostsPage() {
           ¥{formatNumber(grandTotal)}
         </span>
       </div>
+
+      {/* 科目別積み上げ棒グラフ */}
+      <SiteCostChart data={chartData} accountKeys={accountKeys} />
 
       {/* 現場ごとのカード */}
       {siteCosts.length === 0 ? (
