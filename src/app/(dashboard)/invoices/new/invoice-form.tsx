@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createInvoice, createConfirmationRequest } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import { Combobox } from "@/components/combobox";
@@ -64,6 +65,7 @@ type Props = {
 };
 
 export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId, getMarkerImage }: Props) {
+  const router = useRouter();
   const today = new Date().toISOString().split("T")[0];
 
   const [invoiceDate, setInvoiceDate] = useState(today);
@@ -74,6 +76,7 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   // 確認依頼関連
   const [lastInvoiceId, setLastInvoiceId] = useState<string | null>(null);
@@ -251,17 +254,8 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
       setConfirmUrl(null);
       setCopied(false);
 
-      setSuccess("請求書を登録しました");
-      // フォームリセット（直前のデフォルト適用）
-      setVendorId(vendorId);
-      setInvoiceNumber("");
-      setNote("");
-      setLines([newLine({ account_id: lastLine?.account_id })]);
-
-      // unknown行がなければ3秒後にメッセージを消す
-      if (!unknownExists) {
-        setTimeout(() => setSuccess(""), 3000);
-      }
+      setSuccess("登録しました");
+      setRegistered(true);
     }
   };
 
@@ -301,6 +295,19 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
     navigator.clipboard.writeText(confirmUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleNext = () => {
+    setRegistered(false);
+    setSuccess("");
+    setHasUnknownSites(false);
+    setLastInvoiceId(null);
+    setConfirmUrl(null);
+    setCopied(false);
+    setVendorId(lastVendorId);
+    setInvoiceNumber("");
+    setNote("");
+    setLines([newLine({ account_id: lastAccountId })]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -482,17 +489,36 @@ export function InvoiceForm({ vendors, sites, accounts, pdfFile, organizationId,
       </div>
 
       {/* アクションエリア */}
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={loading}
-          className="bg-primary text-white rounded-[14px] min-w-[180px] h-[50px] text-sm font-medium hover:bg-primary-hover disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? "登録中..." : "登録する"}
-        </button>
-        <span className="text-xs text-sub-text">Ctrl + Enter で登録できます</span>
-      </div>
+      {registered ? (
+        <div className="flex items-center gap-3 mb-8">
+          <button
+            type="button"
+            onClick={handleNext}
+            className="bg-primary text-white rounded-[14px] min-w-[180px] h-[50px] text-sm font-medium hover:bg-primary-hover cursor-pointer"
+          >
+            次へ（続けて登録する）
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/data")}
+            className="rounded-[14px] min-w-[140px] h-[50px] text-sm font-medium border border-border text-foreground hover:bg-background cursor-pointer bg-card"
+          >
+            一覧へ戻る
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-primary text-white rounded-[14px] min-w-[180px] h-[50px] text-sm font-medium hover:bg-primary-hover disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? "登録中..." : "登録する"}
+          </button>
+          <span className="text-xs text-sub-text">Ctrl + Enter で登録できます</span>
+        </div>
+      )}
     </div>
   );
 }
