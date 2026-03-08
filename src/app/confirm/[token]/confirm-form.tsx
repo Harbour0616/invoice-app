@@ -111,7 +111,14 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
     }
   };
 
+  const FIXED_CHOICES = [
+    { id: "__common__", name: "共通" },
+    { id: "__not_cost__", name: "原価ではない" },
+  ];
+
   const getSiteName = (siteId: string) => {
+    const fixed = FIXED_CHOICES.find((c) => c.id === siteId);
+    if (fixed) return fixed.name;
     const site = sites.find((s) => s.id === siteId);
     return site ? site.name : siteId;
   };
@@ -472,6 +479,54 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 500, color: C.text }}>{s.name}</div>
                       <div style={{ fontSize: 13, color: C.sub }}>{s.code}</div>
+                    </div>
+                  </button>
+                );
+              })}
+              {FIXED_CHOICES.map((fc) => {
+                const isSelected = responses[modalLineId] === fc.id;
+                return (
+                  <button
+                    key={fc.id}
+                    type="button"
+                    onClick={() => {
+                      setResponses((prev) => ({ ...prev, [modalLineId]: fc.id }));
+                      setModalLineId(null);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      width: "100%",
+                      padding: "14px 16px",
+                      borderRadius: 10,
+                      border: `2px solid ${isSelected ? C.green : C.border}`,
+                      background: isSelected ? C.mint : C.white,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
+                      boxShadow: isSelected ? `0 0 0 1px ${C.green}` : "none",
+                    }}
+                  >
+                    <span style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      border: `2px solid ${isSelected ? C.green : "#C4CCC8"}`,
+                      background: isSelected ? C.green : "transparent",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      color: C.white,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      transition: "background 0.2s ease, border-color 0.2s ease",
+                    }}>
+                      {isSelected && "\u2713"}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 500, color: C.text }}>{fc.name}</div>
                     </div>
                   </button>
                 );
