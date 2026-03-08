@@ -5,8 +5,8 @@ import { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHand
 const ZOOM_STEPS = [50, 75, 100, 125, 150, 200, 250, 300];
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const ACCEPT_STRING = "application/pdf,image/jpeg,image/png";
-const MARKER_COLOR = "rgba(255, 255, 0, 0.18)";
-const MARKER_GUIDE_COLOR = "rgba(255, 255, 0, 0.10)";
+const MARKER_COLOR = "rgba(255, 210, 0, 0.45)";
+const MARKER_GUIDE_COLOR = "rgba(255, 210, 0, 0.25)";
 const MARKER_WIDTH = 14;
 
 function useIsMobile(breakpoint = 768) {
