@@ -20,6 +20,26 @@ function formatYen(value: number): string {
   return value.toLocaleString("ja-JP");
 }
 
+function CustomYTick({ x, y, payload }: { x: number; y: number; payload: { value: string } }) {
+  const text = payload.value;
+  const CHAR_LIMIT = 8;
+  if (text.length <= CHAR_LIMIT) {
+    return (
+      <text x={x} y={y} textAnchor="end" fill="#1F2D29" fontSize={12} fontWeight={500} dominantBaseline="central">
+        {text}
+      </text>
+    );
+  }
+  const line1 = text.slice(0, CHAR_LIMIT);
+  const line2 = text.slice(CHAR_LIMIT);
+  return (
+    <text x={x} y={y} textAnchor="end" fill="#1F2D29" fontSize={12} fontWeight={500}>
+      <tspan x={x} dy="-0.5em">{line1}</tspan>
+      <tspan x={x} dy="1.2em">{line2}</tspan>
+    </text>
+  );
+}
+
 export function SiteCostChart({ data, accountKeys }: Props) {
   if (data.length === 0) return null;
 
@@ -50,8 +70,8 @@ export function SiteCostChart({ data, accountKeys }: Props) {
             <YAxis
               type="category"
               dataKey="name"
-              width={150}
-              tick={{ fontSize: 12, fill: "#1F2D29", fontWeight: 500 }}
+              width={200}
+              tick={CustomYTick as any}
               axisLine={false}
               tickLine={false}
             />
