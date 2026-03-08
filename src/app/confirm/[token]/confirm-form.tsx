@@ -198,15 +198,16 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
               marginBottom: 12,
               borderLeft: `4px solid ${C.green}`,
             }}>
-              <div style={{ fontSize: 15, color: C.sub, marginBottom: 4 }}>
+              <div style={{ fontSize: 13, color: "#7B8A86", marginBottom: 4 }}>
                 {line.account?.name || "—"}
               </div>
+              {line.description && (
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#1F2D29", marginBottom: 6, lineHeight: 1.4 }}>
+                  {line.description}
+                </div>
+              )}
               <div style={{ fontSize: 28, fontWeight: 700, color: C.text, fontFamily: "monospace", lineHeight: 1.2 }}>
                 ¥{formatNumber(line.amount_incl_tax)}
-              </div>
-              <div style={{ fontSize: 13, color: C.sub, marginTop: 8 }}>
-                明細 #{line.line_order + 1} ・ 税率 {Math.round(Number(line.tax_rate) * 100)}%
-                {line.description && ` ・ ${line.description}`}
               </div>
             </div>
 
