@@ -72,9 +72,6 @@ export default async function ConfirmPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto py-4 px-3 sm:py-8 sm:px-4">
-        <h1 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 sm:mb-6">
-          請求書 現場確認
-        </h1>
         <ConfirmForm
           request={request}
           invoice={invoice as any}

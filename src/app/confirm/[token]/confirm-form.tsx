@@ -148,9 +148,6 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
           <p style={{ fontSize: 14, color: C.sub, margin: 0, lineHeight: 1.5 }}>
             1件選ぶだけで完了します
           </p>
-          <p style={{ fontSize: 13, color: C.sub, margin: "2px 0 0", lineHeight: 1.5 }}>
-            迷った場合は下の請求書をご確認ください
-          </p>
         </div>
       )}
 
