@@ -89,6 +89,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [attachmentOpen, setAttachmentOpen] = useState(false);
+  const [modalLineId, setModalLineId] = useState<string | null>(null);
 
   const allAnswered = nullSiteLines.every((l) => responses[l.id]);
   const showStickyButton = !isCompleted && !submitted && nullSiteLines.length > 0;
@@ -228,59 +229,50 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 10 }}>
-                  この費用がかかった現場を1件選んでください
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {sites.map((s) => {
-                    const isSelected = selected === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          setResponses((prev) => ({ ...prev, [line.id]: s.id }));
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                          width: "100%",
-                          padding: "14px 16px",
-                          borderRadius: 10,
-                          border: `2px solid ${isSelected ? C.green : C.border}`,
-                          background: isSelected ? C.mint : C.white,
-                          cursor: "pointer",
-                          textAlign: "left",
-                          transition: "background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
-                          boxShadow: isSelected ? `0 0 0 1px ${C.green}` : "none",
-                        }}
-                      >
-                        <span style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: "50%",
-                          border: `2px solid ${isSelected ? C.green : "#C4CCC8"}`,
-                          background: isSelected ? C.green : "transparent",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                          color: C.white,
-                          fontSize: 13,
-                          fontWeight: 700,
-                          transition: "background 0.2s ease, border-color 0.2s ease",
-                        }}>
-                          {isSelected && "\u2713"}
-                        </span>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 500, color: C.text, transition: "font-weight 0.2s ease" }}>{s.name}</div>
-                          <div style={{ fontSize: 13, color: C.sub }}>{s.code}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {selected ? (
+                  <button
+                    type="button"
+                    onClick={() => setModalLineId(line.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      padding: "14px 16px",
+                      borderRadius: 12,
+                      border: `2px solid ${C.green}`,
+                      background: C.mint,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16, fontWeight: 600, color: C.greenDark }}>{getSiteName(selected)}</span>
+                      <span style={{ fontSize: 14, color: C.green }}>&#10003;</span>
+                    </span>
+                    <span style={{ fontSize: 13, color: C.green }}>変更する</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setModalLineId(line.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      padding: "14px 16px",
+                      borderRadius: 12,
+                      border: `2px solid ${C.border}`,
+                      background: C.white,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ fontSize: 15, fontWeight: 500, color: C.sub }}>現場を選ぶ</span>
+                    <span style={{ fontSize: 16, color: C.sub }}>→</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -373,6 +365,128 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
               {loading ? "送信中..." : allAnswered ? "回答を送信する" : "現場を1件選択してください"}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* 現場選択モーダル */}
+      {modalLineId && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 200,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+          }}
+        >
+          {/* オーバーレイ */}
+          <div
+            onClick={() => setModalLineId(null)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
+            }}
+          />
+          {/* モーダル本体 */}
+          <div
+            style={{
+              position: "relative",
+              background: C.white,
+              borderRadius: "16px 16px 0 0",
+              maxHeight: "70vh",
+              display: "flex",
+              flexDirection: "column",
+              animation: "slideUp 0.25s ease",
+            }}
+          >
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "16px 20px",
+              borderBottom: `1px solid ${C.border}`,
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 600, color: C.text }}>現場を選択してください</span>
+              <button
+                type="button"
+                onClick={() => setModalLineId(null)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "none",
+                  border: "none",
+                  fontSize: 20,
+                  color: C.sub,
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ overflowY: "auto", padding: "12px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+              {sites.map((s) => {
+                const isSelected = responses[modalLineId] === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      setResponses((prev) => ({ ...prev, [modalLineId]: s.id }));
+                      setModalLineId(null);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      width: "100%",
+                      padding: "14px 16px",
+                      borderRadius: 10,
+                      border: `2px solid ${isSelected ? C.green : C.border}`,
+                      background: isSelected ? C.mint : C.white,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
+                      boxShadow: isSelected ? `0 0 0 1px ${C.green}` : "none",
+                    }}
+                  >
+                    <span style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      border: `2px solid ${isSelected ? C.green : "#C4CCC8"}`,
+                      background: isSelected ? C.green : "transparent",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      color: C.white,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      transition: "background 0.2s ease, border-color 0.2s ease",
+                    }}>
+                      {isSelected && "\u2713"}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: isSelected ? 600 : 500, color: C.text }}>{s.name}</div>
+                      <div style={{ fontSize: 13, color: C.sub }}>{s.code}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <style>{`
+            @keyframes slideUp {
+              from { transform: translateY(100%); }
+              to { transform: translateY(0); }
+            }
+          `}</style>
         </div>
       )}
     </div>
