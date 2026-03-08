@@ -143,7 +143,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
             現場確認
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: "0 0 6px", lineHeight: 1.3 }}>
-            この費用はどの現場ですか？
+            どの現場の費用ですか？
           </h2>
           <p style={{ fontSize: 14, color: C.sub, margin: 0, lineHeight: 1.5 }}>
             1件選ぶだけで完了します
