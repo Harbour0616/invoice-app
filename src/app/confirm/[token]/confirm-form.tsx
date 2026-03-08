@@ -328,6 +328,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
                 src={signedFileUrl}
                 isImage={isImagePath(invoice.pdf_file_path)}
                 maxHeight={showStickyButton ? "calc(100vh - 200px)" : "calc(100vh - 120px)"}
+                markerUrl={signedMarkerUrl}
               />
             </div>
           )}
@@ -517,10 +518,12 @@ function AttachmentViewer({
   src,
   isImage,
   maxHeight,
+  markerUrl,
 }: {
   src: string;
   isImage: boolean;
   maxHeight: string;
+  markerUrl?: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -682,7 +685,7 @@ function AttachmentViewer({
         maxHeight,
       }}
     >
-      <div ref={contentRef} style={{ transformOrigin: "0 0" }}>
+      <div ref={contentRef} style={{ transformOrigin: "0 0", position: "relative" }}>
         {isImage ? (
           <img
             src={src}
@@ -699,6 +702,21 @@ function AttachmentViewer({
               minHeight: "500px",
               border: "none",
               display: "block",
+              pointerEvents: "none",
+            }}
+          />
+        )}
+        {markerUrl && (
+          <img
+            src={markerUrl}
+            alt=""
+            draggable={false}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
               pointerEvents: "none",
             }}
           />
