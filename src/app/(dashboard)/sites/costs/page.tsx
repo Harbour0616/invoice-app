@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getOrganization } from "@/lib/get-organization";
-import { SiteCostChart } from "./site-cost-chart";
+import { SiteCostContent } from "./site-cost-content";
 
 const CHART_COLORS = [
   "#2F9E77",
@@ -14,10 +14,6 @@ const CHART_COLORS = [
   "#D98E4E",
   "#7C8CF5",
 ];
-
-function formatNumber(n: number): string {
-  return n.toLocaleString("ja-JP");
-}
 
 export default async function SiteCostsPage() {
   const { organizationId } = await getOrganization();
@@ -94,8 +90,6 @@ export default async function SiteCostsPage() {
     (a, b) => b.total - a.total
   );
 
-  const grandTotal = siteCosts.reduce((sum, s) => sum + s.total, 0);
-
   // グラフ用データ構築
   const allAccountIds = Array.from(accountNameMap.keys());
   const accountKeys = allAccountIds.map((id, i) => ({
@@ -121,69 +115,11 @@ export default async function SiteCostsPage() {
         <span className="text-[11px] text-sub-text font-medium">{siteCosts.length} 現場</span>
       </div>
 
-      {/* 合計金額ヒーロー */}
-      <div
-        className="rounded-[20px] border border-border mb-8 px-8 py-7"
-        style={{
-          background: "linear-gradient(135deg, #FFFFFF 0%, #F0F9F4 60%, #E6F5ED 100%)",
-          boxShadow: "0 2px 12px rgba(47,158,119,0.07)",
-        }}
-      >
-        <div className="text-[11px] font-semibold text-sub-text uppercase tracking-widest mb-2">
-          税抜費用合計
-        </div>
-        <div className="text-[2.25rem] font-extrabold font-mono text-primary tracking-tight leading-none">
-          ¥{formatNumber(grandTotal)}
-        </div>
-      </div>
-
-      {/* 科目別積み上げ棒グラフ */}
-      <SiteCostChart data={chartData} accountKeys={accountKeys} />
-
-      {/* 区切り */}
-      <div className="h-px bg-border mb-6" />
-
-      {/* 現場一覧セクション */}
-      {siteCosts.length === 0 ? (
-        <p className="text-sub-text text-sm">データがありません</p>
-      ) : (
-        <>
-          <div className="text-[11px] font-semibold text-sub-text uppercase tracking-widest mb-3">
-            現場一覧
-          </div>
-          <div className="flex flex-col gap-2">
-            {siteCosts.map((site, idx) => {
-              const pct = grandTotal > 0 ? (site.total / grandTotal) * 100 : 0;
-              return (
-                <div
-                  key={site.id}
-                  className="group bg-card rounded-[16px] border border-border px-6 py-4 flex items-center justify-between transition-all hover:shadow-md hover:border-primary/20"
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <span className="text-[11px] font-mono text-sub-text/60 w-5 shrink-0 text-right">
-                      {idx + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-foreground truncate">
-                        {site.name}
-                      </div>
-                      <div className="text-[11px] text-sub-text mt-0.5">{site.code}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-3 shrink-0 ml-4">
-                    <span className="text-[11px] font-medium text-sub-text/70 tabular-nums">
-                      {pct.toFixed(1)}%
-                    </span>
-                    <span className="text-[15px] font-bold font-mono text-foreground tabular-nums">
-                      ¥{formatNumber(site.total)}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+      <SiteCostContent
+        siteCosts={siteCosts}
+        chartData={chartData}
+        accountKeys={accountKeys}
+      />
     </div>
   );
 }
