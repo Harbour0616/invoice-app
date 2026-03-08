@@ -69,6 +69,7 @@ const C = {
 };
 
 export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMarkerUrl }: Props) {
+  const token = request.token;
   const isCompleted = request.status === "completed";
   const nullSiteLines = invoice.invoice_lines
     .filter((l) => l.site_id === null)
@@ -124,7 +125,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   };
 
   if (isDone) {
-    return <CompletionScreen />;
+    return <CompletionScreen token={token} />;
   }
 
   return (
@@ -545,7 +546,7 @@ export function ConfirmForm({ request, invoice, sites, signedFileUrl, signedMark
   );
 }
 
-function CompletionScreen() {
+function CompletionScreen({ token }: { token: string }) {
   const confettiRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -731,11 +732,11 @@ function CompletionScreen() {
         この画面は閉じて大丈夫です
       </p>
 
-      {/* 閉じるボタン */}
+      {/* ダッシュボードボタン */}
       <button
         type="button"
         onClick={() => {
-          try { window.close(); } catch { history.back(); }
+          window.location.href = `/dashboard/${token}`;
         }}
         style={{
           padding: "16px 48px",
@@ -751,7 +752,7 @@ function CompletionScreen() {
           minWidth: 200,
         }}
       >
-        閉じる
+        ダッシュボードを確認
       </button>
     </div>
   );
