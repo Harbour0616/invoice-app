@@ -21,12 +21,10 @@ export async function getActiveSites() {
 /* ---------- 見積書 ---------- */
 
 export async function getEstimates() {
-  const { organizationId } = await getOrganization();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("estimates")
     .select("*, site:sites(id, code, name)")
-    .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -65,7 +63,6 @@ type EstimateFormData = {
 };
 
 export async function saveEstimate(data: EstimateFormData) {
-  const { organizationId } = await getOrganization();
   const supabase = await createClient();
 
   const subtotal = data.items.reduce((sum, i) => sum + i.amount, 0);
@@ -73,7 +70,6 @@ export async function saveEstimate(data: EstimateFormData) {
   const total_amount = subtotal + tax_amount;
 
   const record = {
-    organization_id: organizationId,
     estimate_number: data.estimate_number,
     site_id: data.site_id || null,
     client_name: data.client_name,
@@ -155,12 +151,10 @@ export async function deleteEstimate(id: string) {
 /* ---------- 売上請求書 ---------- */
 
 export async function getSalesInvoices() {
-  const { organizationId } = await getOrganization();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sales_invoices")
     .select("*, site:sites(id, code, name)")
-    .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -200,7 +194,6 @@ type SalesInvoiceFormData = {
 };
 
 export async function saveSalesInvoice(data: SalesInvoiceFormData) {
-  const { organizationId } = await getOrganization();
   const supabase = await createClient();
 
   const subtotal = data.items.reduce((sum, i) => sum + i.amount, 0);
@@ -208,7 +201,6 @@ export async function saveSalesInvoice(data: SalesInvoiceFormData) {
   const total_amount = subtotal + tax_amount;
 
   const record = {
-    organization_id: organizationId,
     invoice_number: data.invoice_number,
     site_id: data.site_id || null,
     estimate_id: data.estimate_id || null,

@@ -101,7 +101,6 @@ export type AppSetting = {
 
 export type Estimate = {
   id: string;
-  organization_id: string;
   estimate_number: string;
   site_id: string | null;
   client_name: string;
@@ -129,7 +128,6 @@ export type EstimateItem = {
 
 export type SalesInvoice = {
   id: string;
-  organization_id: string;
   invoice_number: string;
   site_id: string | null;
   estimate_id: string | null;

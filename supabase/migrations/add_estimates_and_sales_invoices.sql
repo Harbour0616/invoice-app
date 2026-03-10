@@ -1,7 +1,6 @@
 -- 見積書テーブル
 CREATE TABLE estimates (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  organization_id uuid NOT NULL,
   estimate_number text NOT NULL,
   site_id uuid REFERENCES sites(id),
   client_name text NOT NULL,
@@ -31,7 +30,6 @@ CREATE TABLE estimate_items (
 -- 売上請求書テーブル
 CREATE TABLE sales_invoices (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  organization_id uuid NOT NULL,
   invoice_number text NOT NULL,
   site_id uuid REFERENCES sites(id),
   estimate_id uuid REFERENCES estimates(id),
