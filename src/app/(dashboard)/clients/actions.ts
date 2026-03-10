@@ -51,6 +51,7 @@ export async function saveClient(data: {
 
   revalidatePath("/clients");
   revalidatePath("/sales");
+  revalidatePath("/master");
   return { error: null };
 }
 
@@ -72,5 +73,6 @@ export async function deleteClient(id: string) {
   if (error) return { error: error.message };
 
   revalidatePath("/clients");
+  revalidatePath("/master");
   return { error: null };
 }

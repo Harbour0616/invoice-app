@@ -37,6 +37,7 @@ export async function createVendor(formData: FormData) {
   }
 
   revalidatePath("/master/vendors");
+  revalidatePath("/master");
   return { error: null };
 }
 
@@ -61,6 +62,7 @@ export async function updateVendor(id: string, formData: FormData) {
   }
 
   revalidatePath("/master/vendors");
+  revalidatePath("/master");
   return { error: null };
 }
 
@@ -85,5 +87,6 @@ export async function deleteVendor(id: string) {
   if (error) return { error: error.message };
 
   revalidatePath("/master/vendors");
+  revalidatePath("/master");
   return { error: null };
 }

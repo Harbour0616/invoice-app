@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { WorkLogTab } from "./work-log-tab";
 import { SummaryTab } from "./summary-tab";
-import { EmployeeTab } from "./employee-tab";
 
 type SiteOption = { id: string; code: string; name: string };
 
@@ -21,7 +20,7 @@ export function LaborClient({
   defaultFrom: string;
   defaultTo: string;
 }) {
-  const [activeTab, setActiveTab] = useState<"worklog" | "summary" | "employee">("worklog");
+  const [activeTab, setActiveTab] = useState<"worklog" | "summary">("worklog");
 
   return (
     <div>
@@ -32,7 +31,6 @@ export function LaborClient({
         {([
           { key: "worklog", label: "日報入力" },
           { key: "summary", label: "集計" },
-          { key: "employee", label: "従業員マスタ" },
         ] as const).map((tab) => (
           <button
             key={tab.key}
@@ -59,9 +57,6 @@ export function LaborClient({
       )}
       {activeTab === "summary" && (
         <SummaryTab sites={sites} />
-      )}
-      {activeTab === "employee" && (
-        <EmployeeTab initialEmployees={initialEmployees} />
       )}
     </div>
   );

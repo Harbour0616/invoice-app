@@ -44,6 +44,7 @@ export async function saveEmployee(input: {
   }
 
   revalidatePath("/labor");
+  revalidatePath("/master");
   return { error: null };
 }
 
@@ -63,6 +64,7 @@ export async function deleteEmployee(id: string) {
   if (error) return { error: error.message };
 
   revalidatePath("/labor");
+  revalidatePath("/master");
   return { error: null };
 }
 
@@ -130,6 +132,7 @@ export async function saveWorkLog(input: {
   }
 
   revalidatePath("/labor");
+  revalidatePath("/master");
   return { error: null };
 }
 
@@ -138,6 +141,7 @@ export async function deleteWorkLog(id: string) {
   const { error } = await supabase.from("work_logs").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/labor");
+  revalidatePath("/master");
   return { error: null };
 }
 
