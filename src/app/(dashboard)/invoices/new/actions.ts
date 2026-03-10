@@ -19,7 +19,7 @@ export async function getMasterData() {
       .from("sites")
       .select("id, code, name, status")
       .eq("organization_id", organizationId)
-      .eq("status", "active")
+      .eq("status", "進行中")
       .order("code"),
     supabase
       .from("accounts")

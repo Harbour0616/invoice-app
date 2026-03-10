@@ -48,7 +48,7 @@ export default async function ConfirmPage({ params }: Props) {
     .from("sites")
     .select("id, code, name")
     .eq("organization_id", invoice.organization_id)
-    .eq("status", "active")
+    .eq("status", "進行中")
     .order("code");
 
   // PDFの署名付きURL生成

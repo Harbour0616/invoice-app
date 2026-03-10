@@ -31,7 +31,11 @@ export type Site = {
   organization_id: string;
   code: string;
   name: string;
-  status: "active" | "completed";
+  client_name: string | null;
+  contract_amount: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: "進行中" | "完了" | "中止";
   created_at: string;
   updated_at: string;
 };

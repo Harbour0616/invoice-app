@@ -106,11 +106,12 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
               </label>
               <select
                 name="status"
-                defaultValue="active"
+                defaultValue="進行中"
                 className="select-bordered"
               >
-                <option value="active">進行中</option>
-                <option value="completed">完了</option>
+                <option value="進行中">進行中</option>
+                <option value="完了">完了</option>
+                <option value="中止">中止</option>
               </select>
             </div>
           </div>
@@ -160,12 +161,14 @@ export function SiteList({ initialSites }: { initialSites: Site[] }) {
                       <td className="px-4 py-3.5">
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${
-                            site.status === "active"
+                            site.status === "進行中"
                               ? "bg-accent/10 text-accent"
-                              : "bg-muted text-sub-text"
+                              : site.status === "中止"
+                                ? "bg-red-50 text-red-500"
+                                : "bg-muted text-sub-text"
                           }`}
                         >
-                          {site.status === "active" ? "進行中" : "完了"}
+                          {site.status}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right space-x-2">
@@ -232,8 +235,9 @@ function EditRow({
           defaultValue={site.status}
           className="select-bordered w-24"
         >
-          <option value="active">進行中</option>
-          <option value="completed">完了</option>
+          <option value="進行中">進行中</option>
+          <option value="完了">完了</option>
+          <option value="中止">中止</option>
         </select>
         <button
           type="submit"
