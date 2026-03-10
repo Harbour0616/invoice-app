@@ -10,7 +10,7 @@ export async function getSites() {
 
   const { data, error } = await supabase
     .from("sites")
-    .select("*")
+    .select("id, code, name, client_name, contract_amount, start_date, end_date, status, organization_id, created_at, updated_at")
     .eq("organization_id", organizationId)
     .order("code");
 

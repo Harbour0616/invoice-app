@@ -10,7 +10,7 @@ export async function getVendors() {
 
   const { data, error } = await supabase
     .from("vendors")
-    .select("*")
+    .select("id, code, name, furigana, is_active, organization_id, created_at, updated_at")
     .eq("organization_id", organizationId)
     .order("code");
 

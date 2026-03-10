@@ -10,7 +10,7 @@ export async function getEmployees() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("employees")
-    .select("*")
+    .select("id, employee_code, employee_name, daily_wage, created_at")
     .order("employee_code");
   if (error) {
     console.error("employees fetch error:", error.message);

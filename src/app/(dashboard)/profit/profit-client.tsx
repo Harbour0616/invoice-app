@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import {
   getProfitData,
   type ProfitSummary,
@@ -88,7 +88,7 @@ export function ProfitClient({ initialData }: { initialData: ProfitSummary }) {
 /* ════════════════════════════════════════════
    Filter Bar
 ════════════════════════════════════════════ */
-function FilterBar({
+const FilterBar = memo(function FilterBar({
   status,
   alertFilter,
   onStatusChange,
@@ -147,12 +147,12 @@ function FilterBar({
       </div>
     </div>
   );
-}
+});
 
 /* ════════════════════════════════════════════
    KPI Strip
 ════════════════════════════════════════════ */
-function KpiStrip({ data }: { data: ProfitSummary }) {
+const KpiStrip = memo(function KpiStrip({ data }: { data: ProfitSummary }) {
   const profitClass = data.totalProfit >= 0 ? "pos" : "neg";
   const marginClass =
     data.profitRate !== null
@@ -189,12 +189,12 @@ function KpiStrip({ data }: { data: ProfitSummary }) {
       </div>
     </div>
   );
-}
+});
 
 /* ════════════════════════════════════════════
    Alert Strip
 ════════════════════════════════════════════ */
-function AlertStrip({ counts }: { counts: ProfitSummary["alertCounts"] }) {
+const AlertStrip = memo(function AlertStrip({ counts }: { counts: ProfitSummary["alertCounts"] }) {
   return (
     <div className="koji-alert-strip">
       <div className="koji-alert-card" style={{ borderTopColor: "#d4a017" }}>
@@ -215,12 +215,12 @@ function AlertStrip({ counts }: { counts: ProfitSummary["alertCounts"] }) {
       </div>
     </div>
   );
-}
+});
 
 /* ════════════════════════════════════════════
    Alert Panel
 ════════════════════════════════════════════ */
-function AlertPanel({ sites }: { sites: SiteProfit[] }) {
+const AlertPanel = memo(function AlertPanel({ sites }: { sites: SiteProfit[] }) {
   return (
     <div className="alert-panel">
       <div className="alert-panel-title">⚠ 要確認現場</div>
@@ -243,12 +243,12 @@ function AlertPanel({ sites }: { sites: SiteProfit[] }) {
       })}
     </div>
   );
-}
+});
 
 /* ════════════════════════════════════════════
    Chart + Distribution (Split Layout)
 ════════════════════════════════════════════ */
-function ChartSection({ sites }: { sites: SiteProfit[] }) {
+const ChartSection = memo(function ChartSection({ sites }: { sites: SiteProfit[] }) {
   const total = sites.length;
   const high = sites.filter((s) => s.gross_margin !== null && s.gross_margin >= 30).length;
   const mid = sites.filter((s) => s.gross_margin !== null && s.gross_margin >= 20 && s.gross_margin < 30).length;
@@ -343,12 +343,12 @@ function ChartSection({ sites }: { sites: SiteProfit[] }) {
       </div>
     </div>
   );
-}
+});
 
 /* ════════════════════════════════════════════
    Table Section
 ════════════════════════════════════════════ */
-function TableSection({ sites }: { sites: SiteProfit[] }) {
+const TableSection = memo(function TableSection({ sites }: { sites: SiteProfit[] }) {
   return (
     <div>
       <div className="koji-sec-label">工事一覧</div>
@@ -428,4 +428,4 @@ function TableSection({ sites }: { sites: SiteProfit[] }) {
       </div>
     </div>
   );
-}
+});

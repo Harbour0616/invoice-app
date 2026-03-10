@@ -7,7 +7,7 @@ export async function getClients() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("*")
+    .select("id, client_code, client_name, postal_code, address, phone, contact_name, notes, created_at")
     .order("client_code");
   if (error) {
     console.error("clients fetch error:", error.message);

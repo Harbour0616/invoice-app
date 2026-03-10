@@ -33,7 +33,7 @@ export async function getEstimates() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("estimates")
-    .select("*, site:sites(id, code, name)")
+    .select("id, estimate_number, title, client_name, total_amount, estimate_date, status, created_at, site:sites(id, code, name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -42,10 +42,10 @@ export async function getEstimates() {
 export async function getEstimateWithItems(id: string) {
   const supabase = await createClient();
   const [{ data: estimate }, { data: items }] = await Promise.all([
-    supabase.from("estimates").select("*").eq("id", id).single(),
+    supabase.from("estimates").select("id, estimate_number, site_id, client_id, client_name, title, estimate_date, valid_until, notes, subtotal, tax_amount, total_amount, status, created_at").eq("id", id).single(),
     supabase
       .from("estimate_items")
-      .select("*")
+      .select("id, estimate_id, item_name, quantity, unit, unit_price, amount, sort_order")
       .eq("estimate_id", id)
       .order("sort_order"),
   ]);
@@ -165,7 +165,7 @@ export async function getSalesInvoices() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sales_invoices")
-    .select("*, site:sites(id, code, name)")
+    .select("id, invoice_number, title, client_name, total_amount, invoice_date, status, created_at, site:sites(id, code, name)")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -174,10 +174,10 @@ export async function getSalesInvoices() {
 export async function getSalesInvoiceWithItems(id: string) {
   const supabase = await createClient();
   const [{ data: invoice }, { data: items }] = await Promise.all([
-    supabase.from("sales_invoices").select("*").eq("id", id).single(),
+    supabase.from("sales_invoices").select("id, invoice_number, site_id, estimate_id, client_id, client_name, title, invoice_date, due_date, notes, subtotal, tax_amount, total_amount, status, created_at").eq("id", id).single(),
     supabase
       .from("sales_invoice_items")
-      .select("*")
+      .select("id, sales_invoice_id, item_name, quantity, unit, unit_price, amount, sort_order")
       .eq("sales_invoice_id", id)
       .order("sort_order"),
   ]);

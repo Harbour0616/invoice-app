@@ -10,7 +10,7 @@ export async function getAccounts() {
 
   const { data, error } = await supabase
     .from("accounts")
-    .select("*")
+    .select("id, code, name, display_order, is_active, organization_id, created_at, updated_at")
     .eq("organization_id", organizationId)
     .order("display_order")
     .order("code");

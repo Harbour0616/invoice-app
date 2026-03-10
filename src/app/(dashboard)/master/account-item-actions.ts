@@ -7,7 +7,7 @@ export async function getAccountItems() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("account_items")
-    .select("*")
+    .select("id, account_code, account_name, account_type, created_at")
     .order("account_code");
   if (error) {
     console.error("account_items fetch error:", error.message);
