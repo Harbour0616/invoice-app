@@ -9,7 +9,10 @@ export async function getClients() {
     .from("clients")
     .select("*")
     .order("client_code");
-  if (error) throw error;
+  if (error) {
+    console.error("clients fetch error:", error.message);
+    return [];
+  }
   return data ?? [];
 }
 

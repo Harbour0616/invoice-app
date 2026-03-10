@@ -79,10 +79,9 @@ export async function saveEstimate(data: EstimateFormData) {
   const tax_amount = Math.floor(subtotal * 0.1);
   const total_amount = subtotal + tax_amount;
 
-  const record = {
+  const record: Record<string, unknown> = {
     estimate_number: data.estimate_number,
     site_id: data.site_id || null,
-    client_id: data.client_id || null,
     client_name: data.client_name,
     title: data.title,
     estimate_date: data.estimate_date,
@@ -92,6 +91,7 @@ export async function saveEstimate(data: EstimateFormData) {
     tax_amount,
     total_amount,
   };
+  if (data.client_id) record.client_id = data.client_id;
 
   let estimateId = data.id;
 
@@ -212,11 +212,10 @@ export async function saveSalesInvoice(data: SalesInvoiceFormData) {
   const tax_amount = Math.floor(subtotal * 0.1);
   const total_amount = subtotal + tax_amount;
 
-  const record = {
+  const record: Record<string, unknown> = {
     invoice_number: data.invoice_number,
     site_id: data.site_id || null,
     estimate_id: data.estimate_id || null,
-    client_id: data.client_id || null,
     client_name: data.client_name,
     title: data.title,
     invoice_date: data.invoice_date,
@@ -226,6 +225,7 @@ export async function saveSalesInvoice(data: SalesInvoiceFormData) {
     tax_amount,
     total_amount,
   };
+  if (data.client_id) record.client_id = data.client_id;
 
   let invoiceId = data.id;
 
