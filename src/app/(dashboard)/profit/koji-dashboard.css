@@ -1,0 +1,665 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+/* ═══════════════════════════════════════════
+   工事別利益レポート (koji) — koujidaichou-tool完全再現
+═══════════════════════════════════════════ */
+
+:root {
+  --koji-navy: #0E2A47;
+  --koji-navy-d: #0A1F36;
+  --koji-navy-l: #143A5C;
+  --koji-gray: #4a5568;
+  --koji-gray-l: #6B8399;
+  --koji-border: #E6EDF5;
+  --koji-accent: #2E8B9A;
+  --koji-green: #2F6F57;
+  --koji-red: #B85450;
+  --koji-text: #0B1B2B;
+  --koji-muted: #6B8399;
+  --koji-bg: #F4F7FB;
+}
+
+.koji-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 32px 60px;
+}
+
+/* ── Section Label ── */
+.koji-sec-label {
+  font-family: 'Noto Sans JP', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #0E2A47;
+  opacity: 1;
+  margin-bottom: 16px;
+  padding-left: 12px;
+  border-left: 3px solid #1a7a4a;
+}
+
+/* ── Panel (白カード) ── */
+.koji-panel {
+  background: #ffffff;
+  border: 1px solid #E8EDF3;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.koji-panel-body {
+  padding: 28px 32px;
+}
+
+/* ── Filter Bar ── */
+.koji-filter-section {
+  margin-bottom: 24px;
+}
+
+.koji-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.koji-filter-stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.koji-filter-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--koji-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.koji-filter-select-wrap {
+  position: relative;
+}
+
+.koji-filter-select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--koji-gray-l);
+  pointer-events: none;
+  transition: border-top-color 0.15s;
+}
+
+.koji-filter-select-wrap:focus-within::after {
+  border-top-color: var(--koji-accent);
+}
+
+.koji-filter-select {
+  background: #FFFFFF;
+  border: 1px solid #D0DDE8;
+  color: #2A3A4A;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
+  padding: 7px 32px 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.15s, color 0.15s;
+  min-width: 130px;
+}
+
+.koji-filter-select:focus {
+  border-color: var(--koji-accent);
+}
+
+.koji-filter-select.has-value {
+  border-color: var(--koji-accent);
+  color: var(--koji-accent);
+}
+
+.koji-filter-arrow {
+  font-size: 12px;
+  color: var(--koji-border);
+  font-weight: 900;
+  user-select: none;
+}
+
+.koji-filter-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--koji-border);
+  flex-shrink: 0;
+}
+
+.koji-filter-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--koji-accent);
+  background: rgba(46,139,154,0.08);
+  border: 1px solid rgba(46,139,154,0.25);
+  border-radius: 4px;
+}
+
+/* ── KPI Strip ── */
+.koji-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
+  position: relative;
+  align-items: start;
+}
+
+.koji-kpi {
+  background: #F0F7F4;
+  border-radius: 10px;
+  border-top: 2px solid #1a7a4a;
+  border-left: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  padding: 28px 28px 24px;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.koji-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(14,42,71,0.10);
+  border-top-color: #14613b;
+}
+
+/* 3番目 = 粗利合計 → ヒーロー */
+.koji-kpi:nth-child(3) {
+  border-top: 2px solid #1a7a4a;
+  box-shadow: 0 4px 20px rgba(14,42,71,0.12);
+  transform: scale(1.01);
+}
+.koji-kpi:nth-child(3):hover {
+  transform: scale(1.01) translateY(-2px);
+  box-shadow: 0 8px 28px rgba(14,42,71,0.16);
+}
+
+.koji-kpi-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: #6B8399;
+  margin-bottom: 10px;
+}
+
+.koji-kpi-val {
+  font-family: 'Inter', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #0B1B2B;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.koji-kpi-val.green  { color: #2D7A5F; }
+.koji-kpi-val.yellow { color: #6B8399; }
+.koji-kpi-val.red    { color: #B85450; }
+.koji-kpi-val.pos    { color: #2D7A5F; }
+.koji-kpi-val.neg    { color: #B85450; }
+.koji-kpi-val .kpi-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: #8a9bb0;
+  margin-left: 2px;
+  vertical-align: baseline;
+}
+
+.koji-kpi-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6B8399;
+}
+
+/* ── Alert Summary Strip ── */
+.koji-alert-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.koji-alert-card {
+  background: #ffffff;
+  border-radius: 8px;
+  border-top: 2px solid #ccc;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  padding: 14px 18px;
+  text-align: center;
+}
+.koji-alert-label {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6B8399;
+  margin-bottom: 4px;
+}
+.koji-alert-val {
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0E2A47;
+}
+
+/* ── Alert Badge & Reason Tags ── */
+.alert-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+  white-space: nowrap;
+}
+.alert-reason-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Noto Sans JP', sans-serif;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #f0f3f7;
+  color: #4a6a82;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+/* ── Alert Panel (要確認現場) ── */
+.alert-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #B85450;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.alert-panel-title {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0E2A47;
+  margin-bottom: 12px;
+}
+.alert-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f3f7;
+}
+.alert-panel-row:last-child { border-bottom: none; }
+.alert-panel-name {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0B1B2B;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.alert-panel-rate {
+  font-family: 'Inter', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #B85450;
+  white-space: nowrap;
+}
+.alert-panel-tags {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Split Layout ── */
+.koji-split {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  margin-bottom: 48px;
+  align-items: start;
+}
+
+/* ── Chart ── */
+.koji-chart-wrap {
+  position: relative;
+  height: 320px;
+}
+
+/* ── Distribution ── */
+.koji-dist-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+}
+
+.koji-dist-item {
+  text-align: center;
+  padding: 18px 12px;
+  position: relative;
+}
+
+.koji-dist-item + .koji-dist-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 1px;
+  background: #e2e8f0;
+}
+
+.koji-dist-count {
+  font-family: 'Inter', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.koji-dist-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: #4a6a82;
+  margin-top: 4px;
+}
+
+.koji-d-high { color: #2D7A5F; }
+.koji-d-mid  { color: #6B8399; }
+.koji-d-low  { color: #B85450; }
+
+.koji-dist-bar {
+  height: 3px;
+  margin-top: 10px;
+  background: #e8ecf0;
+  position: relative;
+}
+
+.koji-dist-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transition: width 0.6s ease;
+}
+
+.koji-dist-pct {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Inter', monospace;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* ── Rank Section ── */
+.koji-rank-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e8ecf0;
+}
+
+.koji-rank-area {
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.koji-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.koji-rank-idx {
+  font-family: 'Inter', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8a9bb0;
+  min-width: 18px;
+}
+
+.koji-rank-name {
+  font-weight: 600;
+  color: #0B1B2B;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.koji-rank-rate {
+  font-family: 'Inter', monospace;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Table ── */
+.koji-tbl-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.koji-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.koji-table thead tr {
+  background: #081520;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.koji-table th {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #7BA7C2;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.koji-table th.r { text-align: right; }
+
+.koji-table tbody tr {
+  border-bottom: 1px solid #E6EDF5;
+  transition: background 0.1s, box-shadow 0.15s;
+}
+
+.koji-table tbody tr:hover {
+  background: #F8FBFD;
+  box-shadow: inset 3px 0 0 #2E8B9A;
+}
+
+.koji-table td {
+  padding: 12px 12px;
+  vertical-align: middle;
+  color: #2A3A4A;
+  font-size: 13px;
+}
+
+.koji-table td:first-child {
+  font-family: 'Courier New', monospace;
+  color: #8a9bb0;
+  font-size: 12px;
+}
+
+.koji-table td.r { text-align: right; }
+
+.koji-table td.mono {
+  font-family: 'Courier New', monospace;
+  text-align: right;
+  font-size: 13px;
+}
+
+.koji-table .koji-proj-id {
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  color: var(--koji-accent);
+  font-size: 12px;
+}
+
+.koji-table .koji-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Inter', monospace;
+  border: 1px solid;
+  border-radius: 4px;
+}
+
+.koji-table .koji-b-high { color: #2D7A5F; border-color: rgba(45,122,95,0.30); background: rgba(45,122,95,0.06); }
+.koji-table .koji-b-mid  { color: #6B8399; border-color: rgba(107,131,153,0.30); background: rgba(107,131,153,0.06); }
+.koji-table .koji-b-low  { color: #B85450; border-color: rgba(184,84,80,0.30); background: rgba(184,84,80,0.06); }
+
+.koji-table .koji-pos { color: #2D7A5F; }
+.koji-table .koji-neg { color: #B85450; }
+
+/* Progress bar in table */
+.koji-table .koji-bar-wrap {
+  display: block;
+  width: 80px;
+  height: 5px;
+  background: var(--koji-border);
+  margin-top: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.koji-table .koji-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s;
+}
+
+.koji-no-data {
+  text-align: center;
+  padding: 56px;
+  color: var(--koji-gray);
+  font-size: 13px;
+}
+
+/* ── Table Header (件数 + 凡例) ── */
+.koji-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+}
+
+.koji-table-meta {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--koji-muted);
+}
+
+.koji-table-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.koji-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.koji-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ── Export Buttons ── */
+.koji-export-group {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.koji-btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #D0DDE8;
+  background: #FFFFFF;
+  color: #2A3A4A;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.koji-btn-export:hover {
+  color: #0B1B2B;
+  background: #F0F2F5;
+  border-color: #A0B4C8;
+}
+
+/* ── Loading State ── */
+.koji-loading {
+  text-align: center;
+  padding: 80px 24px;
+  color: var(--koji-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.koji-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #D0DDE8;
+  border-top-color: var(--koji-accent);
+  border-radius: 50%;
+  animation: koji-spin 0.7s linear infinite;
+  margin: 0 auto 14px;
+}
+
+@keyframes koji-spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .koji-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .koji-split { grid-template-columns: 1fr; }
+  .koji-alert-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .koji-wrap { padding: 20px 12px 40px; }
+  .koji-kpi-strip { grid-template-columns: 1fr; }
+  .koji-alert-strip { grid-template-columns: 1fr 1fr; }
+}
