@@ -1,7 +1,8 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-export async function getOrganization() {
+export const getOrganization = cache(async function getOrganization() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -25,4 +26,4 @@ export async function getOrganization() {
     organizationId: member.organization_id as string,
     role: member.role as "owner" | "member",
   };
-}
+});
