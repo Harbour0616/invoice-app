@@ -187,3 +187,11 @@ export type WorkLog = {
   notes: string | null;
   created_at: string;
 };
+
+export type AccountItem = {
+  id: string;
+  account_code: string | null;
+  account_name: string;
+  account_type: string;
+  created_at: string;
+};

@@ -2,14 +2,16 @@ import { getSites } from "../sites/manage/actions";
 import { getClients } from "../clients/actions";
 import { getVendors } from "./vendors/actions";
 import { getEmployees } from "../labor/actions";
+import { getAccountItems } from "./account-item-actions";
 import { MasterClient } from "./master-client";
 
 export default async function MasterPage() {
-  const [sites, clients, vendors, employees] = await Promise.all([
+  const [sites, clients, vendors, employees, accountItems] = await Promise.all([
     getSites(),
     getClients(),
     getVendors(),
     getEmployees(),
+    getAccountItems(),
   ]);
 
   return (
@@ -19,6 +21,7 @@ export default async function MasterPage() {
         clients={clients}
         vendors={vendors}
         employees={employees}
+        accountItems={accountItems}
       />
     </div>
   );

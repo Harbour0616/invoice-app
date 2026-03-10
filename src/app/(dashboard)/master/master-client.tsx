@@ -5,20 +5,23 @@ import { SiteManageClient } from "../sites/manage/site-manage-client";
 import { ClientList } from "../clients/client-list";
 import { VendorList } from "./vendors/vendor-list";
 import { EmployeeTab } from "../labor/employee-tab";
-import type { Site, Client, Vendor, Employee } from "@/types/database";
+import { AccountItemTab } from "./account-item-tab";
+import type { Site, Client, Vendor, Employee, AccountItem } from "@/types/database";
 
 export function MasterClient({
   sites,
   clients,
   vendors,
   employees,
+  accountItems,
 }: {
   sites: Site[];
   clients: Client[];
   vendors: Vendor[];
   employees: Employee[];
+  accountItems: AccountItem[];
 }) {
-  const [activeTab, setActiveTab] = useState<"sites" | "clients" | "vendors" | "employees">("sites");
+  const [activeTab, setActiveTab] = useState<"sites" | "clients" | "vendors" | "employees" | "accountItems">("sites");
 
   return (
     <div>
@@ -31,6 +34,7 @@ export function MasterClient({
           { key: "clients", label: "売上先" },
           { key: "vendors", label: "支払先" },
           { key: "employees", label: "従業員" },
+          { key: "accountItems", label: "勘定科目" },
         ] as const).map((tab) => (
           <button
             key={tab.key}
@@ -50,6 +54,7 @@ export function MasterClient({
       {activeTab === "clients" && <ClientList initialClients={clients} />}
       {activeTab === "vendors" && <VendorList initialVendors={vendors} />}
       {activeTab === "employees" && <EmployeeTab initialEmployees={employees} />}
+      {activeTab === "accountItems" && <AccountItemTab initialAccountItems={accountItems} />}
     </div>
   );
 }

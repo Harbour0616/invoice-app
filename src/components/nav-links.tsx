@@ -10,7 +10,6 @@ const navItems = [
   { href: "/sites/costs", label: "現場別費用" },
   { href: "/labor", label: "労務管理" },
   { href: "/master", label: "マスタ管理" },
-  { href: "/master/accounts", label: "勘定科目" },
 ];
 
 export function NavLinks() {
@@ -19,9 +18,7 @@ export function NavLinks() {
   return (
     <>
       {navItems.map((item) => {
-        const isActive = item.href === "/master"
-          ? pathname === "/master"
-          : pathname.startsWith(item.href);
+        const isActive = pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}

@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         destination: "/master",
         permanent: false,
       },
+      {
+        source: "/master/accounts",
+        destination: "/master",
+        permanent: false,
+      },
     ];
   },
 };
