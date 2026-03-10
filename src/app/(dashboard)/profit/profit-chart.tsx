@@ -1,163 +1,135 @@
 "use client";
 
-import { useRef } from "react";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
   Tooltip,
   Legend,
-} from "chart.js";
-import { Chart } from "react-chartjs-2";
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import type { SiteProfit } from "./actions";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Tooltip,
-  Legend
-);
-
-const fmt = (n: number) => "¥" + Math.round(Math.abs(n)).toLocaleString("ja-JP");
-const pct = (s: number, c: number) => (s === 0 ? 0 : ((s - c) / s) * 100);
+const fmt = (n: number) =>
+  "¥" + Math.round(Math.abs(n)).toLocaleString("ja-JP");
+const pct = (s: number, c: number) =>
+  s === 0 ? 0 : +( ((s - c) / s) * 100 ).toFixed(1);
 
 export function ProfitChart({ sites }: { sites: SiteProfit[] }) {
-  const chartRef = useRef<ChartJS | null>(null);
-
-  const labels = sites.map((s) =>
-    s.name.length > 10 ? s.name.slice(0, 10) + "…" : s.name
-  );
-  const costs = sites.map((s) => s.total_cost);
-  const profits = sites.map((s) => s.gross_profit);
-  const rates = sites.map((s) => pct(s.sales, s.total_cost));
-
-  const maxRate = rates.length > 0
-    ? Math.max(50, ...rates.map((r) => Math.ceil(r / 10) * 10 + 10))
-    : 50;
+  const data = sites.map((s) => ({
+    name: s.name.length > 10 ? s.name.slice(0, 10) + "…" : s.name,
+    fullName: s.name,
+    原価: s.total_cost,
+    粗利益: s.gross_profit,
+    粗利率: pct(s.sales, s.total_cost),
+    売上: s.sales,
+  }));
 
   return (
-    <Chart
-      ref={chartRef}
-      type="bar"
-      data={{
-        labels,
-        datasets: [
-          {
-            type: "bar" as const,
-            label: "原価",
-            data: costs,
-            backgroundColor: "#c8d8e8",
-            borderColor: "#c8d8e8",
-            borderWidth: 1,
-            stack: "stack1",
-            barPercentage: 0.65,
-            maxBarThickness: 80,
-            yAxisID: "y",
-            order: 2,
-          },
-          {
-            type: "bar" as const,
-            label: "粗利益",
-            data: profits,
-            backgroundColor: "#1a7a4a",
-            borderColor: "#1a7a4a",
-            borderWidth: 1,
-            stack: "stack1",
-            barPercentage: 0.65,
-            maxBarThickness: 80,
-            yAxisID: "y",
-            order: 1,
-          },
-          {
-            type: "line" as const,
-            label: "粗利率",
-            data: rates,
-            borderColor: "#2E8B9A",
-            backgroundColor: "rgba(46,139,154,0.06)",
-            borderWidth: 1.5,
-            pointBackgroundColor: "#2E8B9A",
-            pointBorderColor: "#ffffff",
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            tension: 0.3,
-            fill: false,
-            yAxisID: "yRate",
-            order: 0,
-          },
-        ],
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" />
+        <XAxis
+          dataKey="name"
+          tick={{ fill: "#8a9bb0", fontSize: 10, fontWeight: 500 }}
+          tickLine={false}
+          axisLine={false}
+          angle={-20}
+          textAnchor="end"
+          height={50}
+        />
+        <YAxis
+          yAxisId="left"
+          tick={{ fill: "#8a9bb0", fontSize: 10, fontWeight: 500 }}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(v: number) => Math.round(v).toLocaleString("ja-JP")}
+        />
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          tick={{ fill: "#2E8B9A", fontSize: 10, fontWeight: 500 }}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(v: number) => `${v}%`}
+          domain={[0, "auto"]}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend
+          wrapperStyle={{ fontSize: 10, fontWeight: 500, color: "#6a8a9e" }}
+        />
+        <Bar
+          yAxisId="left"
+          dataKey="原価"
+          stackId="stack"
+          fill="#c8d8e8"
+          barSize={40}
+          radius={[0, 0, 0, 0]}
+        />
+        <Bar
+          yAxisId="left"
+          dataKey="粗利益"
+          stackId="stack"
+          fill="#1a7a4a"
+          barSize={40}
+          radius={[2, 2, 0, 0]}
+        />
+        <Line
+          yAxisId="right"
+          type="monotone"
+          dataKey="粗利率"
+          stroke="#2E8B9A"
+          strokeWidth={1.5}
+          dot={{ fill: "#2E8B9A", stroke: "#fff", strokeWidth: 2, r: 4 }}
+          activeDot={{ r: 6 }}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+function CustomTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0]?.payload;
+  if (!d) return null;
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #e2e6ec",
+        borderRadius: 6,
+        padding: 14,
+        fontSize: 12,
+        lineHeight: 1.8,
       }}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        layout: { padding: { top: 10 } },
-        plugins: {
-          legend: {
-            labels: {
-              color: "#6a8a9e",
-              font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-            },
-          },
-          tooltip: {
-            backgroundColor: "#ffffff",
-            borderColor: "#e2e6ec",
-            borderWidth: 1,
-            titleColor: "#1a2332",
-            titleFont: { family: "'Noto Sans JP', sans-serif", weight: 500 },
-            bodyColor: "#4a6a82",
-            bodyFont: { family: "'Inter', monospace" },
-            padding: 14,
-            callbacks: {
-              title: (c: any[]) => sites[c[0].dataIndex]?.name ?? "",
-              label: (c: any) => {
-                if (c.dataset.label === "粗利率") {
-                  return `  粗利率  : ${rates[c.dataIndex].toFixed(1)}%`;
-                }
-                return `  ${c.dataset.label} : ${fmt(c.raw as number)}`;
-              },
-              afterBody: (c: any[]) => {
-                const i = c[0].dataIndex;
-                return [`  ─────────────`, `  売上合計 : ${fmt(sites[i].sales)}`];
-              },
-            },
-          },
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: "#8a9bb0",
-              font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-              maxRotation: 30,
-            },
-            grid: { display: false },
-          },
-          y: {
-            position: "left" as const,
-            ticks: {
-              color: "#8a9bb0",
-              font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-              callback: (v: any) => Math.round(Number(v)).toLocaleString("ja-JP"),
-            },
-            grid: { color: "rgba(0,0,0,0.025)" },
-          },
-          yRate: {
-            position: "right" as const,
-            min: 0,
-            max: maxRate,
-            ticks: {
-              color: "#2E8B9A",
-              font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-              callback: (v: any) => v + "%",
-            },
-            grid: { drawOnChartArea: false },
-          },
-        },
-      } as any}
-    />
+    >
+      <div style={{ fontWeight: 600, color: "#1a2332", marginBottom: 4 }}>
+        {d.fullName}
+      </div>
+      <div style={{ color: "#4a6a82", fontFamily: "'Inter', monospace" }}>
+        原価　: {fmt(d.原価)}
+      </div>
+      <div style={{ color: "#4a6a82", fontFamily: "'Inter', monospace" }}>
+        粗利益: {fmt(d.粗利益)}
+      </div>
+      <div style={{ color: "#4a6a82", fontFamily: "'Inter', monospace" }}>
+        粗利率: {d.粗利率}%
+      </div>
+      <div
+        style={{
+          borderTop: "1px solid #e8ecf0",
+          marginTop: 4,
+          paddingTop: 4,
+          color: "#4a6a82",
+          fontFamily: "'Inter', monospace",
+        }}
+      >
+        売上　: {fmt(d.売上)}
+      </div>
+    </div>
   );
 }

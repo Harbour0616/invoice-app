@@ -1,27 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import dynamic from "next/dynamic";
 import {
   getProfitData,
   type ProfitSummary,
   type SiteProfit,
   type AlertStatus,
 } from "./actions";
+import { ProfitChart } from "./profit-chart";
 import "./koji-dashboard.css";
-
-/* Chart.jsはSSR不可のためdynamic importでクライアントのみ読み込み */
-const ProfitChart = dynamic(
-  () => import("./profit-chart").then((m) => m.ProfitChart),
-  {
-    ssr: false,
-    loading: () => (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#6B8399", fontSize: 13 }}>
-        グラフ読み込み中...
-      </div>
-    ),
-  }
-);
 
 /* ── Utility ── */
 const fmt = (n: number) => "¥" + Math.round(Math.abs(n)).toLocaleString("ja-JP");
