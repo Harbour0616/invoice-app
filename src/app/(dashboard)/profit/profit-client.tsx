@@ -1,35 +1,26 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import {
   getProfitData,
   type ProfitSummary,
   type SiteProfit,
   type AlertStatus,
 } from "./actions";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Tooltip,
-  Legend,
-  type ChartData,
-  type ChartOptions,
-} from "chart.js";
-import { Chart } from "react-chartjs-2";
 import "./koji-dashboard.css";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Tooltip,
-  Legend
+/* Chart.jsはSSR不可のためdynamic importでクライアントのみ読み込み */
+const ProfitChart = dynamic(
+  () => import("./profit-chart").then((m) => m.ProfitChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#6B8399", fontSize: 13 }}>
+        グラフ読み込み中...
+      </div>
+    ),
+  }
 );
 
 /* ── Utility ── */
@@ -78,12 +69,10 @@ export function ProfitClient({ initialData }: { initialData: ProfitSummary }) {
     handleFilter(status, val);
   };
 
-  // Sites with alerts
   const alertedSites = data.sites.filter((s) => s.alert_status !== "正常");
 
   return (
-    <div className="koji-wrap" style={{ background: "var(--koji-bg, #F4F7FB)" }}>
-      {/* ── Filter ── */}
+    <div className="koji-wrap" style={{ background: "#F4F7FB" }}>
       <FilterBar
         status={status}
         alertFilter={alertFilter}
@@ -98,19 +87,10 @@ export function ProfitClient({ initialData }: { initialData: ProfitSummary }) {
         </div>
       ) : (
         <>
-          {/* ── KPI Strip ── */}
           <KpiStrip data={data} />
-
-          {/* ── Alert Summary ── */}
           <AlertStrip counts={data.alertCounts} />
-
-          {/* ── Alert Panel ── */}
           {alertedSites.length > 0 && <AlertPanel sites={alertedSites} />}
-
-          {/* ── Chart + Distribution ── */}
           <ChartSection sites={data.sites} />
-
-          {/* ── Table ── */}
           <TableSection sites={data.sites} />
         </>
       )}
@@ -172,9 +152,7 @@ function FilterBar({
             {(status !== "all" || alertFilter !== "all") && (
               <>
                 <div className="koji-filter-sep" />
-                <div className="koji-filter-active-badge">
-                  フィルタ適用中
-                </div>
+                <div className="koji-filter-active-badge">フィルタ適用中</div>
               </>
             )}
           </div>
@@ -188,15 +166,10 @@ function FilterBar({
    KPI Strip
 ════════════════════════════════════════════ */
 function KpiStrip({ data }: { data: ProfitSummary }) {
-  const profitClass =
-    data.totalProfit >= 0 ? "pos" : "neg";
+  const profitClass = data.totalProfit >= 0 ? "pos" : "neg";
   const marginClass =
     data.profitRate !== null
-      ? data.profitRate >= 30
-        ? "green"
-        : data.profitRate >= 20
-          ? "yellow"
-          : "red"
+      ? data.profitRate >= 30 ? "green" : data.profitRate >= 20 ? "yellow" : "red"
       : "";
 
   return (
@@ -216,9 +189,7 @@ function KpiStrip({ data }: { data: ProfitSummary }) {
       <div className="koji-kpi">
         <div className="koji-kpi-label">粗利合計</div>
         <div className={`koji-kpi-val ${profitClass}`}>{fmt(data.totalProfit)}</div>
-        <div className="koji-kpi-sub">
-          前期比: —
-        </div>
+        <div className="koji-kpi-sub">前期比: —</div>
       </div>
       <div className="koji-kpi">
         <div className="koji-kpi-label">平均粗利率</div>
@@ -236,11 +207,7 @@ function KpiStrip({ data }: { data: ProfitSummary }) {
 /* ════════════════════════════════════════════
    Alert Strip
 ════════════════════════════════════════════ */
-function AlertStrip({
-  counts,
-}: {
-  counts: ProfitSummary["alertCounts"];
-}) {
+function AlertStrip({ counts }: { counts: ProfitSummary["alertCounts"] }) {
   return (
     <div className="koji-alert-strip">
       <div className="koji-alert-card" style={{ borderTopColor: "#d4a017" }}>
@@ -274,19 +241,14 @@ function AlertPanel({ sites }: { sites: SiteProfit[] }) {
         const rate = pct(site.sales, site.total_cost);
         return (
           <div key={site.id} className="alert-panel-row">
-            <span
-              className="alert-badge"
-              style={{ background: ALERT_COLORS[site.alert_status] }}
-            >
+            <span className="alert-badge" style={{ background: ALERT_COLORS[site.alert_status] }}>
               {site.alert_status}
             </span>
             <span className="alert-panel-name">{site.name}</span>
             <span className="alert-panel-rate">{rate.toFixed(1)}%</span>
             <span className="alert-panel-tags">
               {site.alert_reasons.map((r) => (
-                <span key={r} className="alert-reason-tag">
-                  {r}
-                </span>
+                <span key={r} className="alert-reason-tag">{r}</span>
               ))}
             </span>
           </div>
@@ -300,153 +262,20 @@ function AlertPanel({ sites }: { sites: SiteProfit[] }) {
    Chart + Distribution (Split Layout)
 ════════════════════════════════════════════ */
 function ChartSection({ sites }: { sites: SiteProfit[] }) {
-  const chartRef = useRef<ChartJS | null>(null);
-
-  // Compute distribution
   const total = sites.length;
   const high = sites.filter((s) => s.gross_margin !== null && s.gross_margin >= 30).length;
-  const mid = sites.filter(
-    (s) => s.gross_margin !== null && s.gross_margin >= 20 && s.gross_margin < 30
-  ).length;
+  const mid = sites.filter((s) => s.gross_margin !== null && s.gross_margin >= 20 && s.gross_margin < 30).length;
   const low = sites.filter((s) => s.gross_margin === null || s.gross_margin < 20).length;
 
   const highPct = total > 0 ? ((high / total) * 100).toFixed(1) : "0";
   const midPct = total > 0 ? ((mid / total) * 100).toFixed(1) : "0";
   const lowPct = total > 0 ? ((low / total) * 100).toFixed(1) : "0";
 
-  // TOP / LOW rank
   const sorted = [...sites]
     .filter((s) => s.gross_margin !== null)
     .sort((a, b) => (b.gross_margin ?? 0) - (a.gross_margin ?? 0));
   const top3 = sorted.slice(0, 3);
   const low3 = sorted.slice(-3).reverse();
-
-  // Chart data — stacked bar (原価 + 粗利益) + line (粗利率)
-  const labels = sites.map((s) =>
-    s.name.length > 10 ? s.name.slice(0, 10) + "…" : s.name
-  );
-  const costs = sites.map((s) => s.total_cost);
-  const profits = sites.map((s) => s.gross_profit);
-  const rates = sites.map((s) => pct(s.sales, s.total_cost));
-
-  const chartData: ChartData<"bar" | "line", number[], string> = {
-    labels,
-    datasets: [
-      {
-        type: "bar" as const,
-        label: "原価",
-        data: costs,
-        backgroundColor: "#c8d8e8",
-        borderColor: "#c8d8e8",
-        borderWidth: 1,
-        stack: "stack1",
-        barPercentage: 0.65,
-        maxBarThickness: 80,
-        yAxisID: "y",
-        order: 2,
-      },
-      {
-        type: "bar" as const,
-        label: "粗利益",
-        data: profits,
-        backgroundColor: "#1a7a4a",
-        borderColor: "#1a7a4a",
-        borderWidth: 1,
-        stack: "stack1",
-        barPercentage: 0.65,
-        maxBarThickness: 80,
-        yAxisID: "y",
-        order: 1,
-      },
-      {
-        type: "line" as const,
-        label: "粗利率",
-        data: rates,
-        borderColor: "#2E8B9A",
-        backgroundColor: "rgba(46,139,154,0.06)",
-        borderWidth: 1.5,
-        pointBackgroundColor: "#2E8B9A",
-        pointBorderColor: "#ffffff",
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        tension: 0.3,
-        fill: false,
-        yAxisID: "yRate",
-        order: 0,
-      },
-    ],
-  };
-
-  const chartOptions: ChartOptions<"bar"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    layout: { padding: { top: 10 } },
-    plugins: {
-      legend: {
-        labels: {
-          color: "#6a8a9e",
-          font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-        },
-      },
-      tooltip: {
-        backgroundColor: "#ffffff",
-        borderColor: "#e2e6ec",
-        borderWidth: 1,
-        titleColor: "#1a2332",
-        titleFont: { family: "'Noto Sans JP', sans-serif", weight: 500 },
-        bodyColor: "#4a6a82",
-        bodyFont: { family: "'Inter', monospace" },
-        padding: 14,
-        callbacks: {
-          title: (c) => {
-            const i = c[0].dataIndex;
-            return sites[i]?.name ?? "";
-          },
-          label: (c) => {
-            const i = c.dataIndex;
-            if (c.dataset.label === "粗利率") {
-              return `  粗利率  : ${rates[i].toFixed(1)}%`;
-            }
-            return `  ${c.dataset.label} : ${fmt(c.raw as number)}`;
-          },
-          afterBody: (c) => {
-            const i = c[0].dataIndex;
-            return [`  ─────────────`, `  売上合計 : ${fmt(sites[i].sales)}`];
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: "#8a9bb0",
-          font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-          maxRotation: 30,
-        },
-        grid: { display: false },
-      },
-      y: {
-        position: "left",
-        ticks: {
-          color: "#8a9bb0",
-          font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-          callback: (v) => Math.round(Number(v)).toLocaleString("ja-JP"),
-        },
-        grid: { color: "rgba(0,0,0,0.025)" },
-      },
-      yRate: {
-        position: "right",
-        min: 0,
-        max: Math.max(50, ...rates.map((r) => Math.ceil(r / 10) * 10 + 10)),
-        ticks: {
-          color: "#2E8B9A",
-          font: { family: "'Inter', sans-serif", weight: 500, size: 10 },
-          callback: (v) => v + "%",
-        },
-        grid: { drawOnChartArea: false },
-      },
-    },
-  };
 
   return (
     <div className="koji-split">
@@ -456,12 +285,7 @@ function ChartSection({ sites }: { sites: SiteProfit[] }) {
           <div className="koji-panel-body">
             <div className="koji-chart-wrap">
               {sites.length > 0 ? (
-                <Chart
-                  ref={chartRef}
-                  type="bar"
-                  data={chartData}
-                  options={chartOptions as any}
-                />
+                <ProfitChart sites={sites} />
               ) : (
                 <div className="koji-no-data">データがありません</div>
               )}
@@ -478,95 +302,49 @@ function ChartSection({ sites }: { sites: SiteProfit[] }) {
               <div className="koji-dist-item">
                 <div className="koji-dist-count koji-d-high">{high}</div>
                 <div className="koji-dist-pct koji-d-high">{highPct}%</div>
-                <div className="koji-dist-label">
-                  優良
-                  <br />
-                  &ge;30%
-                </div>
+                <div className="koji-dist-label">優良<br />&ge;30%</div>
                 <div className="koji-dist-bar">
-                  <div
-                    className="koji-dist-fill"
-                    style={{
-                      background: "#2D7A5F",
-                      width: total > 0 ? `${(high / total) * 100}%` : "0%",
-                    }}
-                  />
+                  <div className="koji-dist-fill" style={{ background: "#2D7A5F", width: total > 0 ? `${(high / total) * 100}%` : "0%" }} />
                 </div>
               </div>
               <div className="koji-dist-item">
                 <div className="koji-dist-count koji-d-mid">{mid}</div>
                 <div className="koji-dist-pct koji-d-mid">{midPct}%</div>
-                <div className="koji-dist-label">
-                  標準
-                  <br />
-                  20-30%
-                </div>
+                <div className="koji-dist-label">標準<br />20-30%</div>
                 <div className="koji-dist-bar">
-                  <div
-                    className="koji-dist-fill"
-                    style={{
-                      background: "#6B8399",
-                      width: total > 0 ? `${(mid / total) * 100}%` : "0%",
-                    }}
-                  />
+                  <div className="koji-dist-fill" style={{ background: "#6B8399", width: total > 0 ? `${(mid / total) * 100}%` : "0%" }} />
                 </div>
               </div>
               <div className="koji-dist-item">
                 <div className="koji-dist-count koji-d-low">{low}</div>
                 <div className="koji-dist-pct koji-d-low">{lowPct}%</div>
-                <div className="koji-dist-label">
-                  要改善
-                  <br />
-                  &lt;20%
-                </div>
+                <div className="koji-dist-label">要改善<br />&lt;20%</div>
                 <div className="koji-dist-bar">
-                  <div
-                    className="koji-dist-fill"
-                    style={{
-                      background: "#B85450",
-                      width: total > 0 ? `${(low / total) * 100}%` : "0%",
-                    }}
-                  />
+                  <div className="koji-dist-fill" style={{ background: "#B85450", width: total > 0 ? `${(low / total) * 100}%` : "0%" }} />
                 </div>
               </div>
             </div>
 
-            {/* TOP / LOW */}
             <div className="koji-rank-section">
-              <div className="koji-sec-label" style={{ fontSize: 9, marginBottom: 8 }}>
-                TOP / LOW
-              </div>
+              <div className="koji-sec-label" style={{ fontSize: 9, marginBottom: 8 }}>TOP / LOW</div>
               <div className="koji-rank-area">
                 {sorted.length === 0 ? (
-                  <div style={{ color: "#5a7a94", fontSize: 11, fontWeight: 500 }}>
-                    データなし
-                  </div>
+                  <div style={{ color: "#5a7a94", fontSize: 11, fontWeight: 500 }}>データなし</div>
                 ) : (
                   <>
                     {top3.map((s, i) => (
                       <div key={`top-${s.id}`} className="koji-rank-row">
                         <span className="koji-rank-idx">▲{i + 1}</span>
                         <span className="koji-rank-name">{s.name}</span>
-                        <span className="koji-rank-rate koji-d-high">
-                          {s.gross_margin?.toFixed(1)}%
-                        </span>
+                        <span className="koji-rank-rate koji-d-high">{s.gross_margin?.toFixed(1)}%</span>
                       </div>
                     ))}
-                    {low3.length > 0 && (
-                      <div
-                        style={{
-                          borderTop: "1px solid #e8ecf0",
-                          margin: "6px 0",
-                        }}
-                      />
-                    )}
+                    {low3.length > 0 && <div style={{ borderTop: "1px solid #e8ecf0", margin: "6px 0" }} />}
                     {low3.map((s, i) => (
                       <div key={`low-${s.id}`} className="koji-rank-row">
                         <span className="koji-rank-idx">▼{i + 1}</span>
                         <span className="koji-rank-name">{s.name}</span>
-                        <span className="koji-rank-rate koji-d-low">
-                          {s.gross_margin?.toFixed(1)}%
-                        </span>
+                        <span className="koji-rank-rate koji-d-low">{s.gross_margin?.toFixed(1)}%</span>
                       </div>
                     ))}
                   </>
@@ -593,16 +371,13 @@ function TableSection({ sites }: { sites: SiteProfit[] }) {
             <div className="koji-table-meta">{sites.length} 件</div>
             <div className="koji-table-legend">
               <span className="koji-legend-item" style={{ color: "#2D7A5F" }}>
-                <span className="koji-legend-dot" style={{ background: "#2D7A5F" }} />
-                &ge;30%
+                <span className="koji-legend-dot" style={{ background: "#2D7A5F" }} />&ge;30%
               </span>
               <span className="koji-legend-item" style={{ color: "#6B8399" }}>
-                <span className="koji-legend-dot" style={{ background: "#6B8399" }} />
-                20–30%
+                <span className="koji-legend-dot" style={{ background: "#6B8399" }} />20–30%
               </span>
               <span className="koji-legend-item" style={{ color: "#B85450" }}>
-                <span className="koji-legend-dot" style={{ background: "#B85450" }} />
-                &lt;20%
+                <span className="koji-legend-dot" style={{ background: "#B85450" }} />&lt;20%
               </span>
             </div>
           </div>
@@ -611,110 +386,49 @@ function TableSection({ sites }: { sites: SiteProfit[] }) {
           <table className="koji-table" style={{ fontSize: 14 }}>
             <thead>
               <tr>
-                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>
-                  #
-                </th>
-                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>
-                  現場コード
-                </th>
-                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>
-                  工事名
-                </th>
-                <th
-                  className="r"
-                  style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}
-                >
-                  請負金額
-                </th>
-                <th
-                  className="r"
-                  style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}
-                >
-                  原価合計
-                </th>
-                <th
-                  className="r"
-                  style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}
-                >
-                  粗利
-                </th>
-                <th
-                  className="r"
-                  style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}
-                >
-                  粗利率
-                </th>
-                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>
-                  判定
-                </th>
-                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>
-                  要注意理由
-                </th>
+                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>#</th>
+                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>現場コード</th>
+                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>工事名</th>
+                <th className="r" style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>請負金額</th>
+                <th className="r" style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>原価合計</th>
+                <th className="r" style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>粗利</th>
+                <th className="r" style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>粗利率</th>
+                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>判定</th>
+                <th style={{ fontSize: 13, padding: "10px 12px", whiteSpace: "nowrap" }}>要注意理由</th>
               </tr>
             </thead>
             <tbody>
               {sites.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="koji-no-data">
-                    データがありません
-                  </td>
-                </tr>
+                <tr><td colSpan={9} className="koji-no-data">データがありません</td></tr>
               ) : (
                 sites.map((site, idx) => {
                   const rate = pct(site.sales, site.total_cost);
                   const cls = clsRate(rate);
-                  const barColor =
-                    cls === "high"
-                      ? "#2D7A5F"
-                      : cls === "mid"
-                        ? "#6B8399"
-                        : "#B85450";
+                  const barColor = cls === "high" ? "#2D7A5F" : cls === "mid" ? "#6B8399" : "#B85450";
                   return (
                     <tr key={site.id}>
                       <td>{idx + 1}</td>
-                      <td>
-                        <span className="koji-proj-id">{site.code}</span>
-                      </td>
+                      <td><span className="koji-proj-id">{site.code}</span></td>
                       <td style={{ fontWeight: 600 }}>{site.name}</td>
-                      <td className="mono">
-                        {site.contract_amount != null ? fmt(site.contract_amount) : "—"}
-                      </td>
+                      <td className="mono">{site.contract_amount != null ? fmt(site.contract_amount) : "—"}</td>
                       <td className="mono">{fmt(site.total_cost)}</td>
-                      <td
-                        className={`mono ${site.gross_profit >= 0 ? "koji-pos" : "koji-neg"}`}
-                      >
-                        {site.gross_profit >= 0 ? "+" : "-"}
-                        {fmt(site.gross_profit)}
+                      <td className={`mono ${site.gross_profit >= 0 ? "koji-pos" : "koji-neg"}`}>
+                        {site.gross_profit >= 0 ? "+" : "-"}{fmt(site.gross_profit)}
                       </td>
                       <td className="r" style={{ minWidth: 100 }}>
-                        <span className={`koji-badge koji-b-${cls}`}>
-                          {rate.toFixed(1)}%
-                        </span>
+                        <span className={`koji-badge koji-b-${cls}`}>{rate.toFixed(1)}%</span>
                         <span className="koji-bar-wrap">
-                          <span
-                            className="koji-bar-fill"
-                            style={{
-                              width: `${Math.min(Math.max(rate, 0), 100)}%`,
-                              background: barColor,
-                            }}
-                          />
+                          <span className="koji-bar-fill" style={{ width: `${Math.min(Math.max(rate, 0), 100)}%`, background: barColor }} />
                         </span>
                       </td>
                       <td>
-                        <span
-                          className="alert-badge"
-                          style={{
-                            background: ALERT_COLORS[site.alert_status],
-                          }}
-                        >
+                        <span className="alert-badge" style={{ background: ALERT_COLORS[site.alert_status] }}>
                           {site.alert_status}
                         </span>
                       </td>
                       <td>
                         {site.alert_reasons.map((r) => (
-                          <span key={r} className="alert-reason-tag">
-                            {r}
-                          </span>
+                          <span key={r} className="alert-reason-tag">{r}</span>
                         ))}
                       </td>
                     </tr>
