@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
+  { href: "/profit", label: "ダッシュボード" },
   { href: "/invoices/new", label: "請求書（支払）" },
   { href: "/data", label: "データ一覧" },
   { href: "/sales", label: "請求書（売上）" },
