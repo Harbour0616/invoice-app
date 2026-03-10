@@ -1,8 +1,8 @@
 import { getProfitData } from "./actions";
-import { ProfitClient } from "./profit-client";
+import { ProfitWrapper } from "./profit-wrapper";
 
 export default async function ProfitPage() {
   const data = await getProfitData();
 
-  return <ProfitClient initialData={data} />;
+  return <ProfitWrapper initialData={data} />;
 }
