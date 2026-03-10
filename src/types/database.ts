@@ -167,3 +167,23 @@ export type SalesInvoiceItem = {
   unit_price: number;
   amount: number;
 };
+
+export type Employee = {
+  id: string;
+  employee_code: string | null;
+  employee_name: string;
+  daily_wage: number;
+  created_at: string;
+};
+
+export type WorkLog = {
+  id: string;
+  work_date: string;
+  employee_id: string | null;
+  site_id: string | null;
+  hours: number;
+  daily_wage: number;
+  labor_cost: number;
+  notes: string | null;
+  created_at: string;
+};
