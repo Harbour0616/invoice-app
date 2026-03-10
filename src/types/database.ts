@@ -98,3 +98,60 @@ export type AppSetting = {
   created_at: string;
   updated_at: string;
 };
+
+export type Estimate = {
+  id: string;
+  organization_id: string;
+  estimate_number: string;
+  site_id: string | null;
+  client_name: string;
+  title: string;
+  estimate_date: string;
+  valid_until: string | null;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  status: "作成中" | "提出済" | "承認済" | "失注";
+  notes: string | null;
+  created_at: string;
+};
+
+export type EstimateItem = {
+  id: string;
+  estimate_id: string;
+  sort_order: number;
+  item_name: string;
+  quantity: number;
+  unit: string | null;
+  unit_price: number;
+  amount: number;
+};
+
+export type SalesInvoice = {
+  id: string;
+  organization_id: string;
+  invoice_number: string;
+  site_id: string | null;
+  estimate_id: string | null;
+  client_name: string;
+  title: string;
+  invoice_date: string;
+  due_date: string | null;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  status: "未送付" | "送付済" | "入金済";
+  notes: string | null;
+  created_at: string;
+};
+
+export type SalesInvoiceItem = {
+  id: string;
+  sales_invoice_id: string;
+  sort_order: number;
+  item_name: string;
+  quantity: number;
+  unit: string | null;
+  unit_price: number;
+  amount: number;
+};

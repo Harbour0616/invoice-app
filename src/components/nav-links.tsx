@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/invoices/new", label: "請求書入力" },
+  { href: "/invoices/new", label: "請求書（支払）" },
   { href: "/data", label: "データ一覧" },
+  { href: "/sales", label: "請求書（売上）" },
   { href: "/sites/costs", label: "現場別費用" },
   { href: "/sites/manage", label: "現場管理" },
   { href: "/master/vendors", label: "取引先" },
