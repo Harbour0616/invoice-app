@@ -43,7 +43,6 @@ export async function createSite(formData: FormData) {
   }
 
   revalidatePath("/sites/manage");
-  revalidatePath("/master/sites");
   return { error: null };
 }
 
@@ -73,7 +72,6 @@ export async function updateSite(id: string, formData: FormData) {
   }
 
   revalidatePath("/sites/manage");
-  revalidatePath("/master/sites");
   return { error: null };
 }
 
@@ -93,6 +91,5 @@ export async function deleteSite(id: string) {
   if (error) return { error: error.message };
 
   revalidatePath("/sites/manage");
-  revalidatePath("/master/sites");
   return { error: null };
 }
