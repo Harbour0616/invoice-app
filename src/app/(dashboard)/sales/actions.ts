@@ -11,10 +11,19 @@ export async function getActiveSites() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("sites")
-    .select("id, code, name")
+    .select("id, code, name, client_name")
     .eq("organization_id", organizationId)
     .eq("status", "進行中")
     .order("code");
+  return data ?? [];
+}
+
+export async function getClients() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("clients")
+    .select("id, client_code, client_name")
+    .order("client_code");
   return data ?? [];
 }
 
@@ -47,6 +56,7 @@ type EstimateFormData = {
   id?: string;
   estimate_number: string;
   site_id: string | null;
+  client_id: string | null;
   client_name: string;
   title: string;
   estimate_date: string;
@@ -72,6 +82,7 @@ export async function saveEstimate(data: EstimateFormData) {
   const record = {
     estimate_number: data.estimate_number,
     site_id: data.site_id || null,
+    client_id: data.client_id || null,
     client_name: data.client_name,
     title: data.title,
     estimate_date: data.estimate_date,
@@ -178,6 +189,7 @@ type SalesInvoiceFormData = {
   invoice_number: string;
   site_id: string | null;
   estimate_id: string | null;
+  client_id: string | null;
   client_name: string;
   title: string;
   invoice_date: string;
@@ -204,6 +216,7 @@ export async function saveSalesInvoice(data: SalesInvoiceFormData) {
     invoice_number: data.invoice_number,
     site_id: data.site_id || null,
     estimate_id: data.estimate_id || null,
+    client_id: data.client_id || null,
     client_name: data.client_name,
     title: data.title,
     invoice_date: data.invoice_date,

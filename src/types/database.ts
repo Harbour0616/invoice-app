@@ -99,10 +99,23 @@ export type AppSetting = {
   updated_at: string;
 };
 
+export type Client = {
+  id: string;
+  client_code: string | null;
+  client_name: string;
+  postal_code: string | null;
+  address: string | null;
+  phone: string | null;
+  contact_name: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
 export type Estimate = {
   id: string;
   estimate_number: string;
   site_id: string | null;
+  client_id: string | null;
   client_name: string;
   title: string;
   estimate_date: string;
@@ -131,6 +144,7 @@ export type SalesInvoice = {
   invoice_number: string;
   site_id: string | null;
   estimate_id: string | null;
+  client_id: string | null;
   client_name: string;
   title: string;
   invoice_date: string;

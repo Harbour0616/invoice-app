@@ -1,11 +1,12 @@
-import { getEstimates, getSalesInvoices, getActiveSites } from "./actions";
+import { getEstimates, getSalesInvoices, getActiveSites, getClients } from "./actions";
 import { SalesClient } from "./sales-client";
 
 export default async function SalesPage() {
-  const [estimates, salesInvoices, sites] = await Promise.all([
+  const [estimates, salesInvoices, sites, clients] = await Promise.all([
     getEstimates(),
     getSalesInvoices(),
     getActiveSites(),
+    getClients(),
   ]);
 
   return (
@@ -14,6 +15,7 @@ export default async function SalesPage() {
         initialEstimates={estimates}
         initialSalesInvoices={salesInvoices}
         sites={sites}
+        clients={clients}
       />
     </div>
   );

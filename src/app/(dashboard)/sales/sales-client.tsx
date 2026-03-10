@@ -4,10 +4,12 @@ import { useState, useRef, useCallback } from "react";
 import { EstimateTab } from "./estimate-tab";
 import { SalesInvoiceTab } from "./sales-invoice-tab";
 
-type SiteOption = { id: string; code: string; name: string };
+type SiteOption = { id: string; code: string; name: string; client_name: string | null };
+type ClientOption = { id: string; client_code: string | null; client_name: string };
 
 type PrefillData = {
   site_id: string | null;
+  client_id: string | null;
   client_name: string;
   title: string;
   estimate_id: string;
@@ -46,10 +48,12 @@ export function SalesClient({
   initialEstimates,
   initialSalesInvoices,
   sites,
+  clients,
 }: {
   initialEstimates: any[];
   initialSalesInvoices: any[];
   sites: SiteOption[];
+  clients: ClientOption[];
 }) {
   const [activeTab, setActiveTab] = useState<"estimates" | "invoices">(
     "estimates"
@@ -105,6 +109,7 @@ export function SalesClient({
           <EstimateTab
             initialEstimates={initialEstimates}
             sites={sites}
+            clients={clients}
             onCreateInvoice={handleCreateInvoice}
             onPrint={handlePrint}
           />
@@ -112,6 +117,7 @@ export function SalesClient({
           <SalesInvoiceTab
             initialSalesInvoices={initialSalesInvoices}
             sites={sites}
+            clients={clients}
             prefillData={prefillData}
             clearPrefill={() => setPrefillData(null)}
             onPrint={handlePrint}

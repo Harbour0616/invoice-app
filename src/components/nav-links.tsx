@@ -10,6 +10,7 @@ const navItems = [
   { href: "/sites/costs", label: "現場別費用" },
   { href: "/sites/manage", label: "現場管理" },
   { href: "/master/vendors", label: "取引先" },
+  { href: "/clients", label: "売上先" },
   { href: "/master/accounts", label: "勘定科目" },
 ];
 

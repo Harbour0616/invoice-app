@@ -7,7 +7,8 @@ import {
   deleteSalesInvoice,
 } from "./actions";
 
-type SiteOption = { id: string; code: string; name: string };
+type SiteOption = { id: string; code: string; name: string; client_name: string | null };
+type ClientOption = { id: string; client_code: string | null; client_name: string };
 
 type ItemRow = {
   key: number;
@@ -27,13 +28,7 @@ type PrintData = {
   valid_until?: string | null;
   due_date?: string | null;
   notes: string | null;
-  items: {
-    item_name: string;
-    quantity: number;
-    unit: string | null;
-    unit_price: number;
-    amount: number;
-  }[];
+  items: { item_name: string; quantity: number; unit: string | null; unit_price: number; amount: number }[];
   subtotal: number;
   tax_amount: number;
   total_amount: number;
@@ -41,39 +36,28 @@ type PrintData = {
 
 type PrefillData = {
   site_id: string | null;
+  client_id: string | null;
   client_name: string;
   title: string;
   estimate_id: string;
-  items: {
-    item_name: string;
-    quantity: number;
-    unit: string | null;
-    unit_price: number;
-    amount: number;
-  }[];
+  items: { item_name: string; quantity: number; unit: string | null; unit_price: number; amount: number }[];
 } | null;
 
 const STATUSES = ["すべて", "未送付", "送付済", "入金済"] as const;
 
 let keyCounter = 1000;
-function nextKey() {
-  return ++keyCounter;
-}
-
+function nextKey() { return ++keyCounter; }
 function emptyItem(): ItemRow {
   return { key: nextKey(), item_name: "", quantity: 1, unit: "", unit_price: 0, amount: 0 };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SalesInvoiceTab({
-  initialSalesInvoices,
-  sites,
-  prefillData,
-  clearPrefill,
-  onPrint,
+  initialSalesInvoices, sites, clients, prefillData, clearPrefill, onPrint,
 }: {
   initialSalesInvoices: any[];
   sites: SiteOption[];
+  clients: ClientOption[];
   prefillData: PrefillData;
   clearPrefill: () => void;
   onPrint: (data: PrintData) => void;
@@ -89,6 +73,7 @@ export function SalesInvoiceTab({
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [siteId, setSiteId] = useState("");
   const [estimateId, setEstimateId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState("");
   const [clientName, setClientName] = useState("");
   const [title, setTitle] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
@@ -96,10 +81,9 @@ export function SalesInvoiceTab({
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<ItemRow[]>([emptyItem()]);
 
-  const filtered =
-    statusFilter === "すべて"
-      ? invoices
-      : invoices.filter((inv: { status: string }) => inv.status === statusFilter);
+  const filtered = statusFilter === "すべて"
+    ? invoices
+    : invoices.filter((inv: { status: string }) => inv.status === statusFilter);
 
   const subtotal = items.reduce((s, i) => s + i.amount, 0);
   const taxAmount = Math.floor(subtotal * 0.1);
@@ -112,60 +96,45 @@ export function SalesInvoiceTab({
       setInvoiceNumber("");
       setSiteId(prefillData.site_id || "");
       setEstimateId(prefillData.estimate_id);
+      setClientId(prefillData.client_id || "");
       setClientName(prefillData.client_name);
       setTitle(prefillData.title);
       setInvoiceDate(new Date().toISOString().slice(0, 10));
-      setDueDate("");
-      setNotes("");
+      setDueDate(""); setNotes("");
       setItems(
         prefillData.items.length > 0
-          ? prefillData.items.map((i) => ({
-              key: nextKey(),
-              item_name: i.item_name,
-              quantity: i.quantity,
-              unit: i.unit || "",
-              unit_price: i.unit_price,
-              amount: i.amount,
-            }))
+          ? prefillData.items.map((i) => ({ key: nextKey(), item_name: i.item_name, quantity: i.quantity, unit: i.unit || "", unit_price: i.unit_price, amount: i.amount }))
           : [emptyItem()]
       );
-      setError("");
-      setModalOpen(true);
-      clearPrefill();
+      setError(""); setModalOpen(true); clearPrefill();
     }
   }, [prefillData, clearPrefill]);
 
   const resetForm = () => {
-    setInvoiceNumber("");
-    setSiteId("");
-    setEstimateId(null);
-    setClientName("");
-    setTitle("");
+    setInvoiceNumber(""); setSiteId(""); setEstimateId(null);
+    setClientId(""); setClientName(""); setTitle("");
     setInvoiceDate(new Date().toISOString().slice(0, 10));
-    setDueDate("");
-    setNotes("");
-    setItems([emptyItem()]);
-    setError("");
-    setEditingId(null);
+    setDueDate(""); setNotes(""); setItems([emptyItem()]);
+    setError(""); setEditingId(null);
   };
 
-  const openCreate = () => {
-    resetForm();
-    setModalOpen(true);
+  const handleClientChange = (newClientId: string) => {
+    setClientId(newClientId);
+    const client = clients.find((c) => c.id === newClientId);
+    setClientName(client?.client_name || "");
   };
+
+  const openCreate = () => { resetForm(); setModalOpen(true); };
 
   const openEdit = async (id: string) => {
     setLoading(true);
     const { invoice, items: dbItems } = await getSalesInvoiceWithItems(id);
-    if (!invoice) {
-      setError("請求書の取得に失敗しました");
-      setLoading(false);
-      return;
-    }
+    if (!invoice) { setError("請求書の取得に失敗しました"); setLoading(false); return; }
     setEditingId(id);
     setInvoiceNumber(invoice.invoice_number);
     setSiteId(invoice.site_id || "");
     setEstimateId(invoice.estimate_id || null);
+    setClientId(invoice.client_id || "");
     setClientName(invoice.client_name);
     setTitle(invoice.title);
     setInvoiceDate(invoice.invoice_date);
@@ -173,79 +142,49 @@ export function SalesInvoiceTab({
     setNotes(invoice.notes || "");
     setItems(
       dbItems.length > 0
-        ? dbItems.map((i) => ({
-            key: nextKey(),
-            item_name: i.item_name,
-            quantity: Number(i.quantity),
-            unit: i.unit || "",
-            unit_price: i.unit_price,
-            amount: i.amount,
-          }))
+        ? dbItems.map((i) => ({ key: nextKey(), item_name: i.item_name, quantity: Number(i.quantity), unit: i.unit || "", unit_price: i.unit_price, amount: i.amount }))
         : [emptyItem()]
     );
-    setError("");
-    setModalOpen(true);
-    setLoading(false);
+    setError(""); setModalOpen(true); setLoading(false);
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     const result = await saveSalesInvoice({
       id: editingId || undefined,
       invoice_number: invoiceNumber,
       site_id: siteId || null,
       estimate_id: estimateId,
+      client_id: clientId || null,
       client_name: clientName,
       title,
       invoice_date: invoiceDate,
       due_date: dueDate || null,
       notes: notes || null,
-      items: items
-        .filter((i) => i.item_name.trim())
-        .map((i, idx) => ({
-          item_name: i.item_name,
-          quantity: i.quantity,
-          unit: i.unit || null,
-          unit_price: i.unit_price,
-          amount: i.amount,
-          sort_order: idx,
-        })),
+      items: items.filter((i) => i.item_name.trim()).map((i, idx) => ({
+        item_name: i.item_name, quantity: i.quantity, unit: i.unit || null,
+        unit_price: i.unit_price, amount: i.amount, sort_order: idx,
+      })),
     });
-    if (result.error) {
-      setError(result.error);
-      setLoading(false);
-    } else {
-      setModalOpen(false);
-      setLoading(false);
-      window.location.reload();
-    }
+    if (result.error) { setError(result.error); setLoading(false); }
+    else { setModalOpen(false); setLoading(false); window.location.reload(); }
   };
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`請求書「${name}」を削除しますか？`)) return;
     setError("");
     const result = await deleteSalesInvoice(id);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setInvoices(invoices.filter((inv: { id: string }) => inv.id !== id));
-    }
+    if (result.error) setError(result.error);
+    else setInvoices(invoices.filter((inv: { id: string }) => inv.id !== id));
   };
 
   const handlePrintCurrent = () => {
     onPrint({
-      type: "invoice",
-      number: invoiceNumber,
-      date: invoiceDate,
-      client_name: clientName,
-      title,
-      due_date: dueDate || null,
-      notes: notes || null,
+      type: "invoice", number: invoiceNumber, date: invoiceDate,
+      client_name: clientName, title,
+      due_date: dueDate || null, notes: notes || null,
       items: items.filter((i) => i.item_name.trim()),
-      subtotal,
-      tax_amount: taxAmount,
-      total_amount: totalAmount,
+      subtotal, tax_amount: taxAmount, total_amount: totalAmount,
     });
   };
 
@@ -257,9 +196,7 @@ export function SalesInvoiceTab({
       else if (field === "unit_price") item.unit_price = Number(value) || 0;
       else if (field === "item_name") item.item_name = value as string;
       else if (field === "unit") item.unit = value as string;
-      if (field === "quantity" || field === "unit_price") {
-        item.amount = Math.floor(item.quantity * item.unit_price);
-      }
+      if (field === "quantity" || field === "unit_price") item.amount = Math.floor(item.quantity * item.unit_price);
       next[index] = item;
       return next;
     });
@@ -282,32 +219,20 @@ export function SalesInvoiceTab({
         <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
       )}
 
-      {/* フィルター + 新規ボタン */}
       <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           {STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${
-                statusFilter === s
-                  ? "bg-primary text-white"
-                  : "bg-muted text-sub-text hover:text-foreground"
-              }`}
-            >
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${statusFilter === s ? "bg-primary text-white" : "bg-muted text-sub-text hover:text-foreground"}`}>
               {s}
             </button>
           ))}
         </div>
-        <button
-          onClick={openCreate}
-          className="px-4 h-11 bg-primary text-white rounded-lg hover:bg-primary-hover text-sm cursor-pointer"
-        >
+        <button onClick={openCreate} className="px-4 h-11 bg-primary text-white rounded-lg hover:bg-primary-hover text-sm cursor-pointer">
           ＋ 新規作成
         </button>
       </div>
 
-      {/* テーブル */}
       <div className="bg-card rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -315,7 +240,7 @@ export function SalesInvoiceTab({
               <tr>
                 <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider whitespace-nowrap">請求番号</th>
                 <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider whitespace-nowrap">工事名</th>
-                <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider whitespace-nowrap">現場</th>
+                <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider whitespace-nowrap">宛先</th>
                 <th className="text-right px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider whitespace-nowrap">金額</th>
                 <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider whitespace-nowrap">請求日</th>
                 <th className="text-left px-4 py-3.5 text-xs text-sub-text font-semibold uppercase tracking-wider whitespace-nowrap">ステータス</th>
@@ -324,24 +249,18 @@ export function SalesInvoiceTab({
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sub-text">
-                    売上請求書がありません
-                  </td>
-                </tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-sub-text">売上請求書がありません</td></tr>
               ) : (
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 filtered.map((inv: any) => (
                   <tr key={inv.id} className="border-b border-table-separator last:border-b-0 hover:bg-table-row-hover">
                     <td className="px-4 py-3.5 font-mono whitespace-nowrap">{inv.invoice_number}</td>
                     <td className="px-4 py-3.5">{inv.title}</td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">{inv.site?.name || "—"}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap">{inv.client_name}</td>
                     <td className="px-4 py-3.5 text-right font-mono whitespace-nowrap">{fmt(inv.total_amount)}</td>
                     <td className="px-4 py-3.5 whitespace-nowrap">{inv.invoice_date}</td>
                     <td className="px-4 py-3.5">
-                      <span className={`text-xs px-2 py-1 rounded-full ${statusStyle(inv.status)}`}>
-                        {inv.status}
-                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${statusStyle(inv.status)}`}>{inv.status}</span>
                     </td>
                     <td className="px-4 py-3.5 text-right whitespace-nowrap space-x-2">
                       <button onClick={() => openEdit(inv.id)} className="text-primary hover:underline cursor-pointer">編集</button>
@@ -355,263 +274,113 @@ export function SalesInvoiceTab({
         </div>
       </div>
 
-      {/* モーダル */}
       {modalOpen && (
-        <InvoiceFormModal
-          editingId={editingId}
-          invoiceNumber={invoiceNumber}
-          setInvoiceNumber={setInvoiceNumber}
-          siteId={siteId}
-          setSiteId={setSiteId}
-          clientName={clientName}
-          setClientName={setClientName}
-          title={title}
-          setTitle={setTitle}
-          invoiceDate={invoiceDate}
-          setInvoiceDate={setInvoiceDate}
-          dueDate={dueDate}
-          setDueDate={setDueDate}
-          notes={notes}
-          setNotes={setNotes}
-          items={items}
-          setItems={setItems}
-          updateItem={updateItem}
-          subtotal={subtotal}
-          taxAmount={taxAmount}
-          totalAmount={totalAmount}
-          sites={sites}
-          error={error}
-          loading={loading}
-          onSubmit={handleSubmit}
-          onPrint={handlePrintCurrent}
-          onClose={() => { setModalOpen(false); setError(""); }}
-          fmt={fmt}
-        />
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto">
+          <div className="absolute inset-0 bg-black/30" onClick={() => { setModalOpen(false); setError(""); }} />
+          <div className="relative bg-card rounded-2xl shadow-lg w-full max-w-3xl mx-4 p-6">
+            <h2 className="text-lg font-bold mb-4">{editingId ? "売上請求書を編集" : "新規売上請求書"}</h2>
+            {error && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="label">請求番号 <span className="text-red-500">*</span></label>
+                <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className="input-bordered" placeholder="例: INV-2026-001" />
+              </div>
+              <div>
+                <label className="label">現場</label>
+                <select value={siteId} onChange={(e) => setSiteId(e.target.value)} className="select-bordered">
+                  <option value="">選択なし</option>
+                  {sites.map((s) => (
+                    <option key={s.id} value={s.id}>{s.code} - {s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">宛先 <span className="text-red-500">*</span></label>
+                <select value={clientId} onChange={(e) => handleClientChange(e.target.value)} className="select-bordered">
+                  <option value="">選択してください</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.client_code ? `${c.client_code} - ` : ""}{c.client_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">工事名 <span className="text-red-500">*</span></label>
+                <input value={title} onChange={(e) => setTitle(e.target.value)} className="input-bordered" placeholder="例: ○○邸新築工事" />
+              </div>
+              <div>
+                <label className="label">請求日 <span className="text-red-500">*</span></label>
+                <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className="input-bordered" />
+              </div>
+              <div>
+                <label className="label">支払期限</label>
+                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="input-bordered" />
+              </div>
+            </div>
+
+            {/* 明細 */}
+            <div className="mb-4">
+              <label className="label">明細</label>
+              <div className="overflow-x-auto border border-border rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs text-sub-text font-semibold">項目名</th>
+                      <th className="px-3 py-2 text-right text-xs text-sub-text font-semibold w-20">数量</th>
+                      <th className="px-3 py-2 text-left text-xs text-sub-text font-semibold w-16">単位</th>
+                      <th className="px-3 py-2 text-right text-xs text-sub-text font-semibold w-28">単価</th>
+                      <th className="px-3 py-2 text-right text-xs text-sub-text font-semibold w-28">金額</th>
+                      <th className="w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, i) => (
+                      <tr key={item.key} className="border-t border-table-separator">
+                        <td className="px-2 py-1.5"><input value={item.item_name} onChange={(e) => updateItem(i, "item_name", e.target.value)} className="input-bordered" placeholder="項目名" /></td>
+                        <td className="px-2 py-1.5"><input type="number" min="0" step="any" value={item.quantity || ""} onChange={(e) => updateItem(i, "quantity", e.target.value)} className="input-bordered text-right" /></td>
+                        <td className="px-2 py-1.5"><input value={item.unit} onChange={(e) => updateItem(i, "unit", e.target.value)} className="input-bordered" placeholder="式" /></td>
+                        <td className="px-2 py-1.5"><input type="number" min="0" value={item.unit_price || ""} onChange={(e) => updateItem(i, "unit_price", e.target.value)} className="input-bordered text-right" /></td>
+                        <td className="px-2 py-1.5 text-right font-mono text-sm whitespace-nowrap pr-3">{fmt(item.amount)}</td>
+                        <td className="px-2 py-1.5">
+                          {items.length > 1 && (
+                            <button type="button" onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 cursor-pointer text-lg">×</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" onClick={() => setItems((prev) => [...prev, emptyItem()])} className="mt-2 px-3 py-1.5 text-sm text-primary hover:underline cursor-pointer">＋ 明細を追加</button>
+            </div>
+
+            {/* 合計 */}
+            <div className="flex justify-end mb-4">
+              <div className="w-64 text-sm">
+                <div className="flex justify-between py-1.5 border-b border-table-separator"><span className="text-sub-text">小計</span><span className="font-mono">{fmt(subtotal)}</span></div>
+                <div className="flex justify-between py-1.5 border-b border-table-separator"><span className="text-sub-text">消費税 (10%)</span><span className="font-mono">{fmt(taxAmount)}</span></div>
+                <div className="flex justify-between py-2 font-bold"><span>合計</span><span className="font-mono">{fmt(totalAmount)}</span></div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="label">備考</label>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input-bordered h-auto py-2" />
+            </div>
+
+            <div className="flex justify-between">
+              <button type="button" onClick={handlePrintCurrent} className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer">PDF印刷</button>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => { setModalOpen(false); setError(""); }} className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer">キャンセル</button>
+                <button type="button" onClick={handleSubmit} disabled={loading || !invoiceNumber || !clientId || !title || !invoiceDate}
+                  className="px-4 h-11 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 text-sm cursor-pointer">
+                  {loading ? "保存中..." : editingId ? "更新" : "登録"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
-  );
-}
-
-/* ---------- モーダルフォーム ---------- */
-
-function InvoiceFormModal({
-  editingId,
-  invoiceNumber, setInvoiceNumber,
-  siteId, setSiteId,
-  clientName, setClientName,
-  title, setTitle,
-  invoiceDate, setInvoiceDate,
-  dueDate, setDueDate,
-  notes, setNotes,
-  items, setItems,
-  updateItem,
-  subtotal, taxAmount, totalAmount,
-  sites,
-  error, loading,
-  onSubmit, onPrint, onClose,
-  fmt,
-}: {
-  editingId: string | null;
-  invoiceNumber: string; setInvoiceNumber: (v: string) => void;
-  siteId: string; setSiteId: (v: string) => void;
-  clientName: string; setClientName: (v: string) => void;
-  title: string; setTitle: (v: string) => void;
-  invoiceDate: string; setInvoiceDate: (v: string) => void;
-  dueDate: string; setDueDate: (v: string) => void;
-  notes: string; setNotes: (v: string) => void;
-  items: ItemRow[]; setItems: React.Dispatch<React.SetStateAction<ItemRow[]>>;
-  updateItem: (index: number, field: keyof ItemRow, value: string | number) => void;
-  subtotal: number; taxAmount: number; totalAmount: number;
-  sites: SiteOption[];
-  error: string; loading: boolean;
-  onSubmit: () => void;
-  onPrint: () => void;
-  onClose: () => void;
-  fmt: (n: number) => string;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl shadow-lg w-full max-w-3xl mx-4 p-6">
-        <h2 className="text-lg font-bold mb-4">
-          {editingId ? "売上請求書を編集" : "新規売上請求書"}
-        </h2>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
-        )}
-
-        {/* ヘッダー部 */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="label">請求番号 <span className="text-red-500">*</span></label>
-            <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} required className="input-bordered" placeholder="例: INV-2026-001" />
-          </div>
-          <div>
-            <label className="label">現場</label>
-            <select value={siteId} onChange={(e) => setSiteId(e.target.value)} className="select-bordered">
-              <option value="">選択なし</option>
-              {sites.map((s) => (
-                <option key={s.id} value={s.id}>{s.code} - {s.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">宛先 <span className="text-red-500">*</span></label>
-            <input value={clientName} onChange={(e) => setClientName(e.target.value)} required className="input-bordered" placeholder="例: 株式会社○○" />
-          </div>
-          <div>
-            <label className="label">工事名 <span className="text-red-500">*</span></label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} required className="input-bordered" placeholder="例: ○○邸新築工事" />
-          </div>
-          <div>
-            <label className="label">請求日 <span className="text-red-500">*</span></label>
-            <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} required className="input-bordered" />
-          </div>
-          <div>
-            <label className="label">支払期限</label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="input-bordered" />
-          </div>
-        </div>
-
-        {/* 明細テーブル */}
-        <div className="mb-4">
-          <label className="label">明細</label>
-          <div className="overflow-x-auto border border-border rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs text-sub-text font-semibold">項目名</th>
-                  <th className="px-3 py-2 text-right text-xs text-sub-text font-semibold w-20">数量</th>
-                  <th className="px-3 py-2 text-left text-xs text-sub-text font-semibold w-16">単位</th>
-                  <th className="px-3 py-2 text-right text-xs text-sub-text font-semibold w-28">単価</th>
-                  <th className="px-3 py-2 text-right text-xs text-sub-text font-semibold w-28">金額</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, i) => (
-                  <tr key={item.key} className="border-t border-table-separator">
-                    <td className="px-2 py-1.5">
-                      <input
-                        value={item.item_name}
-                        onChange={(e) => updateItem(i, "item_name", e.target.value)}
-                        className="input-bordered"
-                        placeholder="項目名"
-                      />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={item.quantity || ""}
-                        onChange={(e) => updateItem(i, "quantity", e.target.value)}
-                        className="input-bordered text-right"
-                      />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <input
-                        value={item.unit}
-                        onChange={(e) => updateItem(i, "unit", e.target.value)}
-                        className="input-bordered"
-                        placeholder="式"
-                      />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.unit_price || ""}
-                        onChange={(e) => updateItem(i, "unit_price", e.target.value)}
-                        className="input-bordered text-right"
-                      />
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono text-sm whitespace-nowrap pr-3">
-                      {fmt(item.amount)}
-                    </td>
-                    <td className="px-2 py-1.5">
-                      {items.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}
-                          className="text-red-400 hover:text-red-600 cursor-pointer text-lg"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button
-            type="button"
-            onClick={() => setItems((prev) => [...prev, emptyItem()])}
-            className="mt-2 px-3 py-1.5 text-sm text-primary hover:underline cursor-pointer"
-          >
-            ＋ 明細を追加
-          </button>
-        </div>
-
-        {/* 合計 */}
-        <div className="flex justify-end mb-4">
-          <div className="w-64 text-sm">
-            <div className="flex justify-between py-1.5 border-b border-table-separator">
-              <span className="text-sub-text">小計</span>
-              <span className="font-mono">{fmt(subtotal)}</span>
-            </div>
-            <div className="flex justify-between py-1.5 border-b border-table-separator">
-              <span className="text-sub-text">消費税 (10%)</span>
-              <span className="font-mono">{fmt(taxAmount)}</span>
-            </div>
-            <div className="flex justify-between py-2 font-bold">
-              <span>合計</span>
-              <span className="font-mono">{fmt(totalAmount)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 備考 */}
-        <div className="mb-6">
-          <label className="label">備考</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            className="input-bordered h-auto py-2"
-          />
-        </div>
-
-        {/* ボタン */}
-        <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={onPrint}
-            className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer"
-          >
-            PDF印刷
-          </button>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer"
-            >
-              キャンセル
-            </button>
-            <button
-              type="button"
-              onClick={onSubmit}
-              disabled={loading || !invoiceNumber || !clientName || !title || !invoiceDate}
-              className="px-4 h-11 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 text-sm cursor-pointer"
-            >
-              {loading ? "保存中..." : editingId ? "更新" : "登録"}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
