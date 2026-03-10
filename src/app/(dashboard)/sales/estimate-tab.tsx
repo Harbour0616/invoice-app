@@ -99,23 +99,14 @@ export function EstimateTab({
     const site = sites.find((s) => s.id === newSiteId);
     if (site) {
       setTitle(site.name);
-      // Auto-fill client if site.client_name matches
       if (site.client_name) {
+        setClientName(site.client_name);
         const match = clients.find((c) => c.client_name === site.client_name);
-        if (match) {
-          setClientId(match.id);
-          setClientName(match.client_name);
-        }
+        setClientId(match ? match.id : "");
       }
     } else {
       setTitle("");
     }
-  };
-
-  const handleClientChange = (newClientId: string) => {
-    setClientId(newClientId);
-    const client = clients.find((c) => c.id === newClientId);
-    setClientName(client?.client_name || "");
   };
 
   const openCreate = () => { resetForm(); setModalOpen(true); };
@@ -294,7 +285,7 @@ export function EstimateTab({
                 <input value={estimateNumber} onChange={(e) => setEstimateNumber(e.target.value)} className="input-bordered" placeholder="例: E-2026-001" />
               </div>
               <div>
-                <label className="label">現場（工事名） <span className="text-red-500">*</span></label>
+                <label className="label">現場・工事名 <span className="text-red-500">*</span></label>
                 <select value={siteId} onChange={(e) => handleSiteChange(e.target.value)} className="select-bordered">
                   <option value="">選択してください</option>
                   {sites.map((s) => (
@@ -303,17 +294,8 @@ export function EstimateTab({
                 </select>
               </div>
               <div>
-                <label className="label">宛先 <span className="text-red-500">*</span></label>
-                <select value={clientId} onChange={(e) => handleClientChange(e.target.value)} className="select-bordered">
-                  <option value="">選択してください</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.client_code ? `${c.client_code} - ` : ""}{c.client_name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">工事名</label>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} className="input-bordered bg-muted" readOnly placeholder="現場を選択すると自動入力" />
+                <label className="label">発注者名 <span className="text-red-500">*</span></label>
+                <input value={clientName} onChange={(e) => { setClientName(e.target.value); setClientId(""); }} className="input-bordered" placeholder="現場を選択すると自動入力" />
               </div>
               <div>
                 <label className="label">見積日 <span className="text-red-500">*</span></label>
@@ -379,7 +361,7 @@ export function EstimateTab({
               <button type="button" onClick={handlePrintCurrent} className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer">PDF印刷</button>
               <div className="flex gap-3">
                 <button type="button" onClick={() => { setModalOpen(false); setError(""); }} className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer">キャンセル</button>
-                <button type="button" onClick={handleSubmit} disabled={loading || !estimateNumber || !clientId || !siteId || !estimateDate}
+                <button type="button" onClick={handleSubmit} disabled={loading || !estimateNumber || !clientName.trim() || !siteId || !estimateDate}
                   className="px-4 h-11 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 text-sm cursor-pointer">
                   {loading ? "保存中..." : editingId ? "更新" : "登録"}
                 </button>

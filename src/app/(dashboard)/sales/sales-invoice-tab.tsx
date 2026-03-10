@@ -118,10 +118,19 @@ export function SalesInvoiceTab({
     setError(""); setEditingId(null);
   };
 
-  const handleClientChange = (newClientId: string) => {
-    setClientId(newClientId);
-    const client = clients.find((c) => c.id === newClientId);
-    setClientName(client?.client_name || "");
+  const handleSiteChange = (newSiteId: string) => {
+    setSiteId(newSiteId);
+    const site = sites.find((s) => s.id === newSiteId);
+    if (site) {
+      setTitle(site.name);
+      if (site.client_name) {
+        setClientName(site.client_name);
+        const match = clients.find((c) => c.client_name === site.client_name);
+        setClientId(match ? match.id : "");
+      }
+    } else {
+      setTitle("");
+    }
   };
 
   const openCreate = () => { resetForm(); setModalOpen(true); };
@@ -287,26 +296,17 @@ export function SalesInvoiceTab({
                 <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className="input-bordered" placeholder="例: INV-2026-001" />
               </div>
               <div>
-                <label className="label">現場</label>
-                <select value={siteId} onChange={(e) => setSiteId(e.target.value)} className="select-bordered">
-                  <option value="">選択なし</option>
+                <label className="label">現場・工事名 <span className="text-red-500">*</span></label>
+                <select value={siteId} onChange={(e) => handleSiteChange(e.target.value)} className="select-bordered">
+                  <option value="">選択してください</option>
                   {sites.map((s) => (
                     <option key={s.id} value={s.id}>{s.code} - {s.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="label">宛先 <span className="text-red-500">*</span></label>
-                <select value={clientId} onChange={(e) => handleClientChange(e.target.value)} className="select-bordered">
-                  <option value="">選択してください</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.client_code ? `${c.client_code} - ` : ""}{c.client_name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">工事名 <span className="text-red-500">*</span></label>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} className="input-bordered" placeholder="例: ○○邸新築工事" />
+                <label className="label">発注者名 <span className="text-red-500">*</span></label>
+                <input value={clientName} onChange={(e) => { setClientName(e.target.value); setClientId(""); }} className="input-bordered" placeholder="現場を選択すると自動入力" />
               </div>
               <div>
                 <label className="label">請求日 <span className="text-red-500">*</span></label>
@@ -372,7 +372,7 @@ export function SalesInvoiceTab({
               <button type="button" onClick={handlePrintCurrent} className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer">PDF印刷</button>
               <div className="flex gap-3">
                 <button type="button" onClick={() => { setModalOpen(false); setError(""); }} className="px-4 h-11 border border-border rounded-lg text-sm hover:bg-muted cursor-pointer">キャンセル</button>
-                <button type="button" onClick={handleSubmit} disabled={loading || !invoiceNumber || !clientId || !title || !invoiceDate}
+                <button type="button" onClick={handleSubmit} disabled={loading || !invoiceNumber || !clientName.trim() || !siteId || !invoiceDate}
                   className="px-4 h-11 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 text-sm cursor-pointer">
                   {loading ? "保存中..." : editingId ? "更新" : "登録"}
                 </button>
